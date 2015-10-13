@@ -18,10 +18,6 @@ From this web page http://www.vision.caltech.edu/bouguetj/calib_doc/, search for
 
 It can be forked or downloaded from https://github.com/kyamagu/mexopencv. Also, extract and put mexopencv into matlab_ws folder. Compile the mex files according to the instructions on https://github.com/kyamagu/mexopencv.
 
-##1.4 INS toolkit (included)
-
-ekfmonoslam also depends on the INS toolkit which can be found at http://www.instk.org/. Since I made much changes to instk, I included it in ekfmonoslam package.
-
 #2. Build
 
 Download the ekfmonoslam package, put all folders within ekfmonoslam into matlab_ws. Because there is a EKF_monoSLAM_1pRANSAC folder in this package which contains patches to 1-Point RANSAC Inverse Depth EKF Monocular SLAM v1.01, you may be prompted to replace or merge files, replace these files already in matlab_ws.

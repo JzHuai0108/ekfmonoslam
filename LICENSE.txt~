@@ -1,0 +1,24 @@
+ImageSegmentor is released under a GPLv3 license (see License-gpl.txt).
+
+For a closed-source version of ImageSegmentor for commercial purposes, please contact the authors.
+
+If you use ImageSegmentor in an academic work, please cite the following publication:
+@article{
+year={2010},
+issn={0255-660X},
+journal={Journal of the Indian Society of Remote Sensing},
+volume={38},
+number={4},
+doi={10.1007/s12524-011-0085-3},
+title={An Improved Hierarchical Segmentation Method for Remote Sensing Images},
+url={http://dx.doi.org/10.1007/s12524-011-0085-3},
+publisher={Springer-Verlag},
+keywords={Inversed quad-tree; Image segmentation; Remote sensing; eCognition; ENVI},
+author={Tan, Yumin and Huai, Jianzhu and Tang, Zhongshi and Xi, Weiwei},
+pages={686-695},
+language={English}
+}
+
+
+
+

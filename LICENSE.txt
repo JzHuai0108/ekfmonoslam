@@ -1,0 +1,7 @@
+ekfmonoslam is released under a GPLv3 license (see License-gpl.txt).
+
+For a closed-source version of ekfmonoslam for commercial purposes, please contact the authors.
+
+
+
+
