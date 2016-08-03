@@ -1,5 +1,22 @@
 function [fimu, imudata, preimudata]=readimuheader(imufile, preimudata, startTime, Counter, imuFileType)
-% imuFileType, 0 for text 3dm gx3-35 data, 1 for H764G 1 comprehensive csv data
+% input
+% imuFileType
+%   0: plain text 3dm gx3-35 data,
+%   1: H764G 1 comprehensive csv
+%   2: steval mki 062v2 from Yujia file
+%   3: steval iNemo suite output data
+%   4: microstrain csv
+%   5: epson csv
+% Counter is a struct that has at least one field numimurecords
+% imufile: imu file name
+
+% output:
+% fimu the file pointer after opening the file
+% imudata: the entry of imu data that has timestamp no less than startTime
+% of format [time(sec), ax, ay, az(,/s^2), wx, wy, wz(rad/s)]
+% preimudata: stores Counter.numimurecords inertial data that are just
+% before the retrieved imu data
+
 if(nargin<5)
     imuFileType=0;
 end

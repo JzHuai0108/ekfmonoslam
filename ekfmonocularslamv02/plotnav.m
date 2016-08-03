@@ -7,12 +7,12 @@ if (~isOutNED)
 end
 if(useGPS)
 inillh_ant2=options.inillh_ant;
-posdata=loadgpsdata(gpsfile, kf(1,1), kf(end,1), gpspostype);
-posdata(:,2:3)=posdata(:,2:3)*pi/180;
+
+posdata=loadAllGPSData(gpsfile, [kf(1,1), kf(end,1)], gpspostype);
 maxl=size(posdata,1);
 if(isOutNED)
     for i=1:maxl
-        rovXYZ = blh2xyz(posdata(i,2:4));
+        rovXYZ = posdata(i,2:4);
         posdata(i,2:4)=posdiff_v001(rovXYZ',inillh_ant2);
     end
 end
@@ -64,7 +64,7 @@ title('Height of antenna by KF(green) and reference(red)');
 saveas(f(nextFig),[resdir 'red truth and height'],'fig');
 
 isPrintToFile=0;
-if(useCam)
+if(options.useCam)
     campose=load(options.camPoseFile);
     if(~isempty(campose))
         nextFig=nextFig+1;

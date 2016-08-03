@@ -74,18 +74,18 @@ if (mode==1)
     
     %%Velocity errors
     %Effect of 2*d_wie_n
-    Anav(4:6,1)=Anav(4:6,1)+2*skew(Vn)*[wie_n(3);0;-wie_n(1)]/Fc(2,2);
+    Anav(4:6,1)=Anav(4:6,1)+2*skew(Vn)*[wie_n(3);0;-wie_n(1)]*Fc(2,2);
     %Effect of d_w_en_n
     Anav(4:6,3:5)=Anav(4:6,3:5)+skew(Vn)*[Vn(2)*Fc(1,1)^2 0 Fc(1,1);-Vn(1)*Fc(2,2)^2 -Fc(2,2) 0;-Vn(2)*Fc(1,1)^2*sL/cL 0 Fc(3,1)];
-    Anav(4:6,1)=Anav(4:6,1)+skew(Vn)*[0;0;-(Vn(2)*Fc(1,1)/cL/cL)]/Fc(2,2);
+    Anav(4:6,1)=Anav(4:6,1)+skew(Vn)*[0;0;-(Vn(2)*Fc(1,1)/cL/cL)]*Fc(2,2);
     
     %%Attitude errors
     %effect of dw_ie_n
-    Anav(7:9,1)=Anav(7:9,1)+[wie_n(3);0;-wie_n(1)]/Fc(2,2);
+    Anav(7:9,1)=Anav(7:9,1)+[wie_n(3);0;-wie_n(1)]*Fc(2,2);
     
     %effect of dw_en_n
     Anav(7:9,3:5)=Anav(7:9,3:5)+[-Vn(2)*Fc(1,1)^2 0 Fc(1,1);Vn(1)*Fc(2,2)^2 -Fc(2,2) 0;Vn(2)*Fc(1,1)^2*sL/cL 0 Fc(3,1)];
-    Anav(9,1)=Anav(9,1)-(Vn(2)*Fc(1,1)/cL/cL)/Fc(2,2);
+    Anav(9,1)=Anav(9,1)-(Vn(2)*Fc(1,1)/cL/cL)*Fc(2,2);
 end
 
 %PSI model

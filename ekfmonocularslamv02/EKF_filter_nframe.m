@@ -1,6 +1,12 @@
-% General state space model for gps imu integration in n-frame
-% The following state space model is used :
-% the complete state is defined as delta(r x,y,z in earth centered
+% General state space model for gps imu integration formulated in n-frame
+% either in psi model or phi model. Psi model only appears in some
+% papers, Phi model is well documented in books like Jekeli 2000, Titterton
+% and Weston, 2000.
+
+% states: IMU position in e frame, IMU velocity in n frame, 
+% attitude w.r.t n frame, accelerometer and gyro biases, accelerometer and gyro scale factors
+
+% the error states are delta(r x,y,z in earth centered
 % "abused" n frame), delta(vx, vy, vz in n frame),
 % delta(roll, pitch, yaw) of the imu, accelerometer and gyro bias drift, acc
 % scale and gyro scale factor error
@@ -8,11 +14,6 @@
 % also be random constant, This does not make much difference
 % acc scale and gyro scale factor are usually modeled as random walk, it can
 % also be random constant, This does not make much difference
-
-% attitude expressed in quaternion, taking 4 dimensions, but in the P
-% matrix, their covariance are in terms of radians^2,
-% so attitude takes only 3 dimensions. The P matrix is in full form, not
-% sparse.
 
 % The state dynamics are driven by a 18 (accel and gyro white noise,
 % bias white noise and scale factor white noise) or 6 (only accel and
@@ -30,8 +31,7 @@ classdef EKF_filter_nframe < handle
     properties (Hidden)
         type = 'ekf';
         tag  = 'EKF_IMU_GPS_NFRM';  % ID tag
-        covDim=9+12; % the dimension of covariance matrix, Rx RY RZ in earth centered
-        % n-frame, vn, RPY, acc bias, gyro bias, acc scale and gyro scale 
+        covDim=9+12; % the dimension of covariance matrix
     end
     % The following properties can be set only by class methods
     properties (SetAccess = private)
@@ -45,14 +45,11 @@ classdef EKF_filter_nframe < handle
         % 3 assumes bias and scale factors are random walks
         % 4 assumes random constant bias and random constant scale factor errors
         
-        % the body frame, in our case is assumed to be aligned with the H764G frame,
-        % but here we are testing on an arbitray sensor, like a mems imu, so Cb2imu
-        % represent the rotations between the body frame and the mems imu frame
-        % set it as [] to be determined using IMU coarse alignment
+        % transform from vehicle body frame to IMU sensor frame       
         Cb2imu;
         dt; % sampling interval of IMU, unit sec
-        % the translation from antenna to mems frame, i.e., the antenna's
-        % position in the mems frame.
+        % the translation from antenna to IMU sensor frame, i.e., the antenna's
+        % position in the s-frame.
         Tant2imu;
         Cen; % rotation from e frame to n frame
         height; % h in geodetic coordinates
@@ -64,7 +61,7 @@ classdef EKF_filter_nframe < handle
         imuBiasDriftSIP=10; %imu bias error covariance start index
         imuScaleFactorSIP=16;
         p_k_k; % the covariance of the entire state vector
-        mode=2; % 1 for phi model, 2 for psi model
+        mode=1; % 1 for phi model, 2 for psi model
         mechanization=2; % 1 for wander azimuth, 2 for local geodetic
         rvqs2e; % added only for compatibility
         camPose; % added only for compatibility
@@ -77,25 +74,20 @@ classdef EKF_filter_nframe < handle
             filter.dt=options.dt;
             filter.Cb2imu=options.Cb2imu;
             filter.Tant2imu=filter.Cb2imu*(options.Tant2body-options.Timu2body);
-            filter.Vn=options.Vn;         
+            filter.Vn=options.Vn;
             % initialize states and covariance for imu gps integration,
             % For imu, rs in n, vs in n, q s2n, ba, bg, sa, sg. (s denotes imu)
             % the position of GPS antenna
             inillh=options.inillh_ant;
             % Cb2n initial value given by external reference
             initqbn=options.qb2n;   % H764G INS data, this b refers to the vehicle body frame
-            if(isempty(filter.Cb2imu))
-                qs2b=getqimu2body(options.imufile, options.inillh_ant, options.startTime, filter.dt);
-                filter.Cb2imu=quat2dcm_v000(qs2b)';
-                filter.qs2n=quatmult_v001(initqbn,qs2b,0);
-            else
-                filter.qs2n=quatmult_v001(initqbn,rotro2qr(filter.Cb2imu),2);
-            end
+            filter.qs2n=quatmult_v001(initqbn,rotro2qr(filter.Cb2imu),2);
+            
             Ce2n0=llh2dcm_v000(inillh(1:2),[0;1]);
             qs2e=quatmult_v001(rotro2qr(Ce2n0), filter.qs2n,1);
             xyz_imu=ecef2geo_v000(inillh,1)-quatrot_v000(qs2e,filter.Tant2imu,0);
             inillh_imu=ecef2geo_v000(xyz_imu, 0);
-            filter.height=inillh_imu(3); %elipsoid height
+            filter.height=inillh_imu(3); %elipsoidal height
             filter.Cen=llh2dcm_v000(inillh_imu(1:2),[0;1]);
             filter.imuErrors=options.imuErrors;
             filter.p_k_k=zeros(filter.covDim);
@@ -110,7 +102,7 @@ classdef EKF_filter_nframe < handle
             
             filter.p_k_k(filter.imuScaleFactorSIP+(0:2),filter.imuScaleFactorSIP+(0:2))=4*eye(3)*IMU_ERRDEF.acc_scale_var;
             filter.p_k_k(filter.imuScaleFactorSIP+(3:5),filter.imuScaleFactorSIP+(3:5))=4*eye(3)*IMU_ERRDEF.gyro_scale_var;
-            
+            filter.mode= options.mode;
         end
         %===============================================================================================
         %-- State transition function
@@ -169,7 +161,7 @@ classdef EKF_filter_nframe < handle
                 filter.qs2n, filter.Vn, filter.Cen, filter.height, velinc, angleinc, dt1);     
         end
         function ffun_covariance(filter, imuaccum, covupt_time, curimutime )
-            %propagate the covariance corresponds to states, rs in e, vs in e, q s2e,
+            %propagate the covariance corresponds to states, rs in n, vs in n, \psi or \phi,
             % ba, bg, sa, sg
             covdt=curimutime-covupt_time;            
             [STM, Qd]=sys_metric_phipsi_v000(filter.Cen, filter.height, ...
@@ -199,17 +191,20 @@ classdef EKF_filter_nframe < handle
                 deltaX(1:filter.imuOrientSIP+2), filter.mode, filter.mechanization);        
             filter.imuErrors = filter.imuErrors + deltaX(filter.imuBiasDriftSIP:end);
         end
-        function SaveToFile(filter, inillh_ant, preimutime, ffilres)
-            %Write result to the files
-            vr_c=rotqr2eu('xyz',filter.qs2n)*180/pi; % Cs2n
-            xyz_ant=ecef2geo_v000([asin(-filter.Cen(3,3));asin(-filter.Cen(2,1));filter.height],1)+...
-                quatrot_v000(quatmult_v001(rotro2qr(filter.Cen),filter.qs2n,1),filter.Tant2imu,0);
+        % output: position of the IMU in a NED frame anchored at some point or in geodetic coordinates,
+        % velocity of the IMU in the body frame, and euler angles of
+        % rotation from body frame to the moving NED frame, and covariances
+        % of 9 navigation ERROR states in the filter
+        function SaveToFile(filter, inillh_ant, preimutime, ffilres)        
+            vr_c=rotqr2eu('xyz',quatmult_v001(filter.qs2n, rotro2qr(filter.Cb2imu), 0))*180/pi; % body frame w.r.t the moving N frame
+            xyz_imu= ecef2geo_v000([asin(-filter.Cen(3,3));asin(-filter.Cen(2,1));filter.height],1);
+         %   xyz_ant= xyz_imu + quatrot_v000(quatmult_v001(rotro2qr(filter.Cen),filter.qs2n,1),filter.Tant2imu,0);
             if(~isempty(inillh_ant))
-                vr_a=posdiff_v001(xyz_ant, inillh_ant);
+                vr_a=posdiff_v001(xyz_imu, inillh_ant); % position of IMU in the initial N frame
                 fwrite(ffilres,[preimutime;vr_a;filter.Vn;vr_c;sqrt(diag(filter.p_k_k(1:9,...
                     1:9)))],'double');
             else
-                fwrite(ffilres,[preimutime;ecef2geo_v000(xyz_ant,0);filter.Vn;vr_c;sqrt(diag(filter.p_k_k(1:9,...
+                fwrite(ffilres,[preimutime;ecef2geo_v000(xyz_imu,0);filter.Vn;vr_c;sqrt(diag(filter.p_k_k(1:9,...
                     1:9)))],'double');
             end
         end

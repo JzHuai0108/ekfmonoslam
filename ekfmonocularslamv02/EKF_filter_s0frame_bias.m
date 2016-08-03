@@ -1,17 +1,10 @@
-% use EKF to estimate gyro and accel biases, scale factor is ignored, for
+% use EKF to estimate gyro and accel biases, scale factors are ignored, for
 % MEMS IMU grade close to microstrain 3dm gx3-35
-% define s0 frame of sensor is tied to w-frame(n-frame rotated about z-axis) at epoch t0
+% define s0 frame of sensor is tied to a known constant n-frame at epoch t0
 
-% the body frame, in our case is assumed to be aligned with the imu frame
-% assume constant gravity in s0 frame, which is estimated as the average of
-% accelerometer measurements in the static session
 % the complete state is defined as 
 % delta(pos s in s0 frame, vx, vy, vz in s0 frame, q s0 to s frame)
 % accelerometer and gyro bias as random walk, or constants
-
-% attitude expressed in quaternion, taking 4 dimensions, but in the P
-% matrix, their covariance are in terms of radians^2, taking only 3 dimensions.
-% The P matrix is in sparse form, not full form.
 
 classdef EKF_filter_s0frame_bias < handle
     properties (Hidden)
@@ -22,8 +15,7 @@ classdef EKF_filter_s0frame_bias < handle
     properties (SetAccess = private)
         invalidateIMUerrors; % reset IMU errors when they goes beyond expectation
         imuType; % the type of IMU, e.g., MEMS 3DX GM 3-35, Steval inems, etc.
-        imuErrorModel=3;
-        % the IMU error model corresponding to bias
+        imuErrorModel=3; % the IMU error model corresponding to biases
         dt; % sampling interval, unit sec        
         rqs02e; % position of s0 in the e frame, qs02e, constant
         rvqs0; % position of current s(k) frame in s0 frame, velocity in s0 frame, q s0 to s(k)    
@@ -45,16 +37,18 @@ classdef EKF_filter_s0frame_bias < handle
             Ce2n0=llh2dcm_v000(inillh(1:2),[0;1]);           
             filter.rqs02e=[ecef2geo_v000(options.inillh_ant,1); rotro2qr(Ce2n0')];
             % assume the IMU is very close to antenna
-            filter.rvqs0=zeros(10,1);
-            filter.rvqs0(7:10)=[options.qb2n(1);-options.qb2n(2:4)]; 
-            filter.rvqs0(4:6)=options.Vs0;
+            filter.rvqs0=zeros(10,1);           
+           
+            qs2n=quatmult_v001(options.qb2n,rotro2qr(options.Cb2imu),2);            
+            filter.rvqs0(7:10)=[qs2n(1);-qs2n(2:4)]; 
+            filter.rvqs0(4:6)=options.Vn;
            
             filter.imuErrors=options.imuErrors;   
             filter.velNoiseStd=options.velNoiseStd;       
             filter.p_k_k=zeros(filter.covDim);    % in s0 frame, position, velocity, attitude are of very small variance        
             
             filter.p_k_k(1:3,1:3)=diag([0.2, 0.2, 0.5].^2); %position errors in meter
-            filter.p_k_k(4:6,4:6)=diag([0.1, 0.1, 0.5].^2); %vel error in m/s
+            filter.p_k_k(4:6,4:6)=diag([0.1, 0.1, 0.2].^2); %vel error in m/s
             filter.p_k_k(filter.imuOrientSIP+(0:2),filter.imuOrientSIP+(0:2))=...
                 diag(([options.initAttVar,options.initAttVar,options.initAttVar*3]).^2);
             IMU_ERRDEF=imu_err_defs_v000(options.imutype);
@@ -70,8 +64,8 @@ classdef EKF_filter_s0frame_bias < handle
         % acc, and gyro angular rate, or delta v, and delta theta
         % and 7th row is the previous epoch(k-1) and 8th is the current
         % epoch(k). Optionally, 9-11th rows are preset gravity in s0 frame, 
-        % 12-14 th row is $\omega_{ie}_{s_0}$, angular rate of local w-frame w.r.t i-frame
-        % represented in w-frame
+        % 12-14 th row is $\omega_{ie}_{s_0}$, angular rate of local s0-frame w.r.t i-frame
+        % represented in s0-frame. We also call s0 frame as w-frame 
         % imuaccum records the accumulated delta v and delta angle for two speed
         % covariance update
         function imuaccum= ffun_state(filter, imuaccum, U1, isDelta, isConstantVel)
@@ -135,9 +129,7 @@ classdef EKF_filter_s0frame_bias < handle
         function ffun_covariance(filter, imuaccum, covupt_time, curimutime, isConstantVel )
             % propagate the covariance in the local s0 frame
             % the covariance corresponds to states, 
-            % rs in s0, v s in s0, q s0 2s, gravity in s0, ba, bg, sa, sg, qs2c, Ts in c,
-            % for each group frame, qs02si and Tsi in s0, for each
-            % point, its inverse depth
+            % rs in s0, v s in s0, q s0 2s, ba, bg          
             covdt=curimutime-covupt_time;     
             if(~isConstantVel)
             [STM, Qd]=sys_local_dcm_bias(filter.rqs02e, filter.rvqs0,...
@@ -146,9 +138,9 @@ classdef EKF_filter_s0frame_bias < handle
                 [STM, Qd]=sys_local_dcm_constvel(filter.rqs02e, filter.rvqs0,...
                 imuaccum(1:3)/covdt,imuaccum(4:6)/covdt, covdt,filter.imuType, filter.velNoiseStd); 
             end
-            % the total covariance
+            
             Pvf = STM*filter.p_k_k*STM'+Qd;  % the covariance of the navigation states and imu error terms
-            filter.p_k_k=sparse(Pvf); % check if Pvf is sparse
+            filter.p_k_k=sparse(Pvf);
         end
         %==============================================================================================
         % if type==0, default, update all the state
@@ -177,10 +169,9 @@ classdef EKF_filter_s0frame_bias < handle
        
         function SaveToFile(filter, inillh_ant, preimutime, ffilres)          
             fwrite(ffilres,[preimutime;filter.rvqs0(1:6);rotqr2eu('xyz', [filter.rvqs0(7); -filter.rvqs0(8:10)])*180/pi;full(sqrt(diag(filter.p_k_k(1:9,1:9))))],'double');
-        end  
+        end
         function mag=GetVelocityMag(filter)
             mag=norm(filter.rvqs0(4:6),2);
         end  
-
     end
 end

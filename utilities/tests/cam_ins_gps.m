@@ -144,29 +144,11 @@ while(imudata(7,1)==0||imudata(1,1)<startTime)
     imudata(5:7,1)=options.Cimu2body*imudata(5:7,1);
 end
 
-if(isempty(qbn))
-    databuf=reshape(cell2mat(preimudata.content()),7,preimudata.size());
-    %the method of Yuksel does not work out as well as Yudan's coarse
-    %alignment
-    %     meandat=mean(databuf(2:end,:),2)/options.dt;
-    %     %Compute the alignment between the geodetic and the body frame
-    %     [Fc wen_n wie_n g]=geoparam_v001(2, Cen(:,3), height, zeros(3,1));
-    %     [Cnb E err]=align_opt_v000([meandat(4:6), meandat(1:3)],[[0;0;-g], wie_n] ,[1 0]); %Note:E defined for errors on imu. Therefore, the order of vectors is important
-    %     qbn=cbn2quat(Cnb');
-    navdata = coarse_alignment(databuf',inillh, [],0, 3);
-    options.Cimu2body=att2Cbn([navdata(8:9),0]);% split the rotation vector
-    % calibrate the first imudata that is only rotated by identity matrix
-    % and to be used for system propagation
-    imudata(2:4,1)=options.Cimu2body*imudata(2:4,1);
-    imudata(5:7,1)=options.Cimu2body*imudata(5:7,1);
+if(isempty(qbn))  
     if(exist('qbnprime','var'))
         qbn=qbnprime;
     else
-        databuf([2:4],:)=options.Cimu2body*databuf([2:4],:);
-        databuf([5:7],:)=options.Cimu2body*databuf([5:7],:);
-        navdata = coarse_alignment(databuf',inillh, [],0, 3);
-        iniatt=navdata(8:10)';
-        qbn=att2qua(navdata(8:10));% 500387.2 H764G INS data
+        assert(false);
     end
 end
 

@@ -77,7 +77,7 @@ switch experim
         % set to determine the interval for covariance update
         % it is observed that maxCovStep=dt~5xdt give visually identical results
         options.maxCovStep=1/20;
-        options.Cb2imu=eye(3); % set this [] in order to be estimated later
+        options.Cb2imu=eye(3);
         options.Timu2body=[0.03;0.03; -0.06]; % 3dm gx 3-35 in body frame
         % imufile may also be used for coarse alignment to estimate Cb2n
         options.imufile=[datadir 'microstrain_20130808imu.txt']; 
@@ -153,7 +153,7 @@ switch experim
         options.imutype=4;      % H764G-1
         options.dt=1/256;  %sampling time
         options.maxCovStep=3.5*options.dt/2; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.Cb2imu=eye(3); % set this [] in order to be estimated later
+        options.Cb2imu=eye(3);
         options.Timu2body=zeros(3,1); % h764G is the body frame
         options.imufile=[resdir,'H764GM0719_1.csv'];
         imuFileType=1;
@@ -213,7 +213,7 @@ switch experim
         options.imutype=4;      % H764G-1
         options.dt=1/256;  %sampling interval
         options.maxCovStep=3.5*options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.Cb2imu=eye(3); % set this [] in order to be estimated later
+        options.Cb2imu=eye(3);
         options.Timu2body=zeros(3,1); % h764G is the body frame
         options.imufile=[resdir,'H764GM0808_1.csv'];
         imuFileType=1;
@@ -270,7 +270,7 @@ switch experim
         options.imutype=6;      %  Steval MKI062V2 
         options.dt=1/50;  %sampling interval
         options.maxCovStep=options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.Cb2imu=eye(3); % set this [] in order to be estimated later
+        options.Cb2imu=eye(3);
         options.Timu2body=zeros(3,1); % h764G is the body frame
         options.imufile=[resdir,'PoseIMUKinect3.tsv'];
         imuFileType=2;

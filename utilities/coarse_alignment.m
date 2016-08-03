@@ -1,8 +1,10 @@
+
 function navdata = coarse_alignment(imudata, blh, filename, level, method);
 %-------------------------------------------------------
 % navdata = coarse_alignment(imudata, gpspos, filename, level);
 % Yudan Yi, May 26, 2005
 %-------------------------------------------------------
+% Obsolete and error prone
 if (exist('level','var')==0 | nargin<4) level = 10; method = 1; end; 
 if (isempty(level)) level = 10; end;
 if (isempty(method)) method = 2; end;

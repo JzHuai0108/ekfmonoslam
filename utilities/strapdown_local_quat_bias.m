@@ -1,4 +1,5 @@
-% input: rvqs0: r s in s0, v s in s0, q s0 2 s,
+% input: rvqs0: r s in s0, v s in s0, q s0 2 s, note s0 is a fixed local
+% world frame, also called w-frame
 % rqs02e: rs0 in e, q s0 2 e, a, acceleration by IMU, w, angular rate by
 % gyro, dt, sample interval from the last measurement to the current
 % measurement.

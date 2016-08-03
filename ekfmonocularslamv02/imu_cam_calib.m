@@ -49,7 +49,7 @@ switch experim
         options.imutype=6;      %  Steval MKI062V2
         options.dt=1/50;  %sampling interval
         options.maxCovStep=options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.Cb2imu=eye(3); % set this [] in order to be estimated later
+        options.Cb2imu=eye(3); 
         options.Timu2body=zeros(3,1); % h764G is the body frame
         options.imufile=[resdir,'iNemo_02092014_061806.tsv'];
         

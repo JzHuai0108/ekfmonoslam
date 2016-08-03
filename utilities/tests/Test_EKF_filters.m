@@ -1,25 +1,30 @@
 % This program tests ekf_filter_nframe, _eframe class
-% the output trajectory is of the antenna
+% body frame is a reference frame, can be a IMU frame or a vehicle body frame 
 
-% we face the problem that some IMU records are missing, but it is
-% generally very small gap, so it is reasonable to use the received
-% measurements for Kalman update once the imu epoch exceeds their epoch.
+% workspace_dir is where the matlab_ws sits
+% resdir is where the result files are to be put in
 
-% Test cases (1) start IMU in stationary mode, do ZUPT for IMU
-% for at least 1 minutes, the initial frame of IMU is s0
-% frame, (2) start IMU in dynamic mode
-
-function Test_EKF_filters()
-addpath('..\instkhuai11112013'); % imu functions
-addpath('..\voicebox\'); % for rotro2qr and rotqr2eu, they are more robuts
-% than dcm2quat_v000 and dcm2euler_v000
-import java.util.LinkedList
+function Test_EKF_filters(workspace_dir, resdir)
 clear variables;
-clc; close all; format longg;
-fprintf('\n IMU_Kinect_Calib.m to test EKF filtering in calibrating mems IMU and Kinect!\n\n');
-rng('default');
+clc; close all; 
 
-experim=2;
+if(nargin==0)
+workspace_dir= 'C:\JianzhuHuai\GPS_IMU\programs\matlab_ws';
+resdir='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\temp\';
+end
+
+addpath([workspace_dir '\instk']); % imu functions
+addpath([workspace_dir '\voicebox']); % for rotro2qr and rotqr2eu, they are more robust than dcm2quat_v000 and dcm2euler_v000
+addpath([workspace_dir '\utilities']);
+addpath([workspace_dir '\ekfmonocularslamv02']);
+
+import java.util.LinkedList
+format longg;
+fprintf('\n test EKF filtering in integrating data of mems IMU and GPS!\n\n');
+rng('default');
+chi2_3= chi2inv(0.9999,3)*50; % threshold to cull outliers
+
+experim=6;
 
 switch experim
     case 1
@@ -32,7 +37,7 @@ switch experim
         % it is advised to turn off scale factor estimate, let gravity and
         % RS2C float
         isOutNED=true;
-        resdir='F:\relaylatest\20130808\';
+     
         filresfile=[resdir, 'filresult.bin']; % navigation states
         imuresfile=[resdir, 'imuresult.bin']; % imu error terms        
         % imu options
@@ -40,14 +45,14 @@ switch experim
         options.endTime=415500.0;
         options.imuErrorModel=3; % how bias and scale factor is modeled
         options.mechanization=2; % 1 for wander azimuth     
-        mode=2; % 0 for e formulation, 1 for phi, 2 for psi, 3 for local frame
+        options.mode=2; % 0 for e formulation, 1 for phi, 2 for psi
         options.imutype=5; % 3dm gx3 35
         options.dt=1/100;  %sampling interval
         options.maxCovStep=options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.Cb2imu=eye(3); % set this [] in order to be estimated later
+        options.Cb2imu=eye(3);
         options.Timu2body=zeros(3,1); % h764G is the body frame
         options.imufile=[resdir,'microstrain_20130808imu.txt'];
-         
+        
         imuFileType=0; % 3DM GX3 -35
         %Initial PVA of IMU
         options.inillh_ant=[0.69818798263956; -1.44937359550259; 212.7058];
@@ -63,7 +68,7 @@ switch experim
         useGPS=true;
         useGPSstd=false; % use the std in the rtklib GPS solutons
         options.Tant2body=[-0.746;0.454;-1.344];
-        gpsSE=[0,0]; %[options.startTime+200, options.startTime+2000]; 
+        gpsSE=[options.startTime+200, options.startTime+2000]; 
         gpspostype=2;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
         gpsfile=[resdir,'oem615_20130809.pos'];
         
@@ -84,7 +89,7 @@ switch experim
         rateGravNorm=inf; %rateZUPT;
         sigmaGravMag=3e-3; % unit m/s^2
         
-        useCam=false;
+        options.useCam=false;
         camFile=options.imufile; % where the camera measurements come from
         options.camPoseFile=[resdir, 'kinectPose.txt']; % output camera position and attitude
         deltaPhi=[0;0;0]; % [-0.487; 1.106; -0.518]/180*pi;
@@ -94,12 +99,14 @@ switch experim
         
         sigmaEuler=[1; 1; 1]*pi/180; % unit rad
         sigmaTrans=[2;2;2]*1e-3; % unit m
+     
       case 2
         % test on Microstrain 3dm gx3-35 data integration with GPS data 
         % collected by octoptor on 2014/10/08 without camera         
-        % it is advised to turn off scale factor estimate
+        % in using NHC, you need to provide the relative rotation between 
+        % the vehicle body frame, sensor frame
         isOutNED=true;
-        resdir='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\temp\';
+      
         filresfile=[resdir, 'filresult.bin']; % navigation states
         imuresfile=[resdir, 'imuresult.bin']; % imu error terms        
         % imu options
@@ -107,11 +114,11 @@ switch experim
         options.endTime= 329732.0;
         options.imuErrorModel=4; % how bias and scale factor is modeled
         options.mechanization=2; % 1 for wander azimuth     
-        mode=2; % 0 for e formulation, 1 for phi, 2 for psi, 3 for local frame s0
+        options.mode=0; % 0 for e formulation, 1 for phi, 2 for psi
         options.imutype=5; % 3dm gx3 35
         options.dt=1/100;  %sampling interval
         options.maxCovStep=3*options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.Cb2imu=eye(3); % set this [] in order to be estimated later
+        options.Cb2imu=eye(3);
         options.Timu2body=zeros(3,1); % assume imu frame is the body frame
         options.imufile='E:\UAVdata\IMU_Microstrain\uavonvan.csv';
        
@@ -154,8 +161,8 @@ switch experim
         rateGravNorm=inf; %rateZUPT;
         sigmaGravMag=3e-3; % unit m/s^2
         
-        useCam=false;
-        options.useCam=useCam;
+        options.useCam=false;
+      
         camFile=options.imufile; % dummy here, where the camera measurements come from
         options.camPoseFile=[resdir, 'kinectPose.txt']; % output camera position and attitude
         deltaPhi=[0;0;0]; % [-0.487; 1.106; -0.518]/180*pi;
@@ -167,7 +174,7 @@ switch experim
         % test on GPSVan ESTCP\January_21_2015 H764G-1 integration with GPS 
         % it is advised to turn off scale factor estimate
         isOutNED=true;
-        resdir='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\temp\';
+      
         filresfile=[resdir, 'filresult.bin']; % navigation states
         imuresfile=[resdir, 'imuresult.bin']; % imu error terms        
         % imu options
@@ -175,11 +182,11 @@ switch experim
         options.endTime=330500; 
         options.imuErrorModel=4; % how bias and scale factor is modeled
         options.mechanization=2; % 1 for wander azimuth     
-        mode=1; % 0 for e formulation, 1 for phi, 2 for psi, 3 for local frame
+        options.mode=1; % 0 for e formulation, 1 for phi, 2 for psi
         options.imutype=4; % h764g
         options.dt=1/256;  %sampling interval
         options.maxCovStep=3*options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.Cb2imu=eye(3); % set this [] in order to be estimated later
+        options.Cb2imu=eye(3);
         options.Timu2body=zeros(3,1); % assume imu frame is the body frame
         options.imufile='F:\GM0121_1.csv';       
         imuFileType=1; % h764g csv
@@ -208,25 +215,13 @@ switch experim
         % first  column is the start time, second column is the end time,
         % for example [575908      576243; 576502      576602]
         
-       zuptSE = [0 329886.5; 329902.5 330059;
-...
-
-330087 330114; 330185 330209; 330282 330307;
-...
-
-330704 330774.5; 330969 331001; 331052 331066;
-...
-
-331075 331299; 331314 331449; 331461 331570.5;
-...
-
-331595 331706; 331716 331812; 331816 331831.5;
-...
-
-331844 331956.5; 331998 332108.5; 332121 332234;
-...
-
-332244 332376; 332405 332609; 333066 333278];
+        zuptSE = [0 329886.5; 329902.5 330059;
+            330087 330114; 330185 330209; 330282 330307;
+            330704 330774.5; 330969 331001; 331052 331066;
+            331075 331299; 331314 331449; 331461 331570.5;
+            331595 331706; 331716 331812; 331816 331831.5;
+            331844 331956.5; 331998 332108.5; 332121 332234;
+            332244 332376; 332405 332609; 333066 333278];
         
         options.sigmaZUPT = 0.1;% unit m/s
         rateZUPT=round(sqrt(1/options.dt)); % from tests, we see zupt has adverse effect in this case
@@ -236,8 +231,8 @@ switch experim
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2.0;
         
-        useCam=false;      % the following is dummy section for camera
-        options.useCam=useCam;
+        options.useCam=false;      % the following is dummy section for camera
+       
         camFile=options.imufile; % dummy here, where the camera measurements come from
         options.camPoseFile=[resdir, 'kinectPose.txt']; % output camera position and attitude
         deltaPhi=[0;0;0]; % [-0.487; 1.106; -0.518]/180*pi;
@@ -245,19 +240,206 @@ switch experim
         options.Tcam2body=[3; -6.2; -4.05]*1e-2; % unit m
         sigmaEuler=[1; 1; 1]*pi/180; % unit rad
         sigmaTrans=[2;2;2]*1e-3; % unit m
+    case 4
+        % test on Microstrain 3dm gx3-35 data integration with GPS data 
+        % collected by gpsvan on 2015/11/11     
+        isOutNED=true;
+     
+        filresfile=[resdir, 'filresult.bin']; % navigation states
+        imuresfile=[resdir, 'imuresult.bin']; % imu error terms        
+        % imu options
+        options.startTime= 320977.2268;
+        options.endTime= options.startTime + 1050;
+        options.imuErrorModel=4; % how bias and scale factor is modeled
+        options.mechanization=2; % 1 for wander azimuth     
+        options.mode=0; % 0 for e formulation, 1 for phi, 2 for psi
+        options.imutype=5; % 3dm gx3 35
+        options.dt=1/125;  %sampling interval
+        options.maxCovStep=2*options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
+        options.Cb2imu=[0 -1 0; 1 0 0; 0 0 1]; 
+        options.Timu2body=zeros(3,1); % assume imu frame has the same origin as the body frame
+        options.imufile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\IMU_MicroStrain\3DM-GX3 Data Log B.csv';
+       
+        imuFileType=4; % 3DM GX3 -35 csv
+        %Initial PVA of IMU
+        options.inillh_ant= [0.698191993283066;   -1.44938211897373;  210.993911730126];
+        % lat, log, height of the antenna, in this case, ASSUMED identical to IMU,
+        options.imuErrors=zeros(12,1);   
+        options.Vn=[0;0;0]; % initial velocity in n frame
+        options.Ve=[0;0;0]; % only used in e-frame IMU formulation
+        options.Vs0=[0;0;0]; % only used in s0-frame IMU formulation
+        Cimu2n=[0 , 1, 0; -1, 0 ,0; 0, 0, 1];
+        options.qb2n= dcm2quat_v000(Cimu2n*options.Cb2imu);
+       
+        options.InvalidateIMUerrors=false;
+        options.initAttVar=2*pi/180; % deg std for roll and pitch, 2 times deg for yaw std
+        % GPS options
+        useGPS=true;
+        useGPSstd=false; % use the std in the rtklib GPS solutons
+        options.RTKlib_mtpl=5; % multiplier for RTKlib obtained std/cov
+        options.RTKlib_sol_std=[0.05,0.05,0.15;1.0,1.0,2.0;15,15,15]; % position std definition depending on the RTKLib solution (1, 2, 5)
+        options.Tant2body=[0.454; 0.746; -1.344];
+        % gps start and end time
+        gpsSE=options.startTime+[100, 200; 250, 400; 450, 600; 650, 800; 950, 2000];        
+        gpspostype=4;           % will be automatically determined
+        gpsfile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\GPS_rover_solution_best\Rear_antenna.pos';  
+        
+        % ZUPT options
+        % ZUPT start and end Time, n x 2 matrix, n is the number of segment
+        % first  column is the start time, second column is the end time,
+        % for example [575908      576243; 576502      576602]
+        
+        zuptSE=[options.startTime, options.startTime+50]; 
+        options.sigmaZUPT = 0.05;% unit m/s
+        rateZUPT=round(sqrt(1/options.dt)); % from tests, we see zupt has adverse effect in this case
+        % NHC options
+        options.sigmaNHC = 0.1;% unit m/s
+        rateNHC=inf; %round(sqrt(1/options.dt));
+        % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
+        options.minNHCVel=2.0;
+        
+        % the following parameters are involved in camera calibration, skip
+        % them for GPS/IMU integration
+        rateGravNorm=inf; 
+        sigmaGravMag=3e-3; % unit m/s^2
+        
+        options.useCam=false;
+      
+        camFile=options.imufile; % dummy here, where the camera measurements come from
+        options.camPoseFile=[resdir, 'kinectPose.txt']; % output camera position and attitude
+        deltaPhi=[0;0;0]; % [-0.487; 1.106; -0.518]/180*pi;
+        options.Cimu2cam=rotqr2ro(rvec2quat_v000(deltaPhi))*[0,0,1;-1,0,0;0,-1,0]'; % (Rc2s)'
+        options.Tcam2body=[3; -6.2; -4.05]*1e-2; % unit m
+        sigmaEuler=[1; 1; 1]*pi/180; % unit rad
+        sigmaTrans=[2;2;2]*1e-3; % unit m
+   case 5
+        % test on microstrain data integration with GPS data
+        % collected by GPS Van on 2015/11/11, session D    
+        isOutNED=true;
+       
+        filresfile=[resdir, 'filresult.bin']; % navigation states
+        imuresfile=[resdir, 'imuresult.bin']; % imu error terms
+        % imu options
+        options.startTime=327674.0042;
+        options.endTime= 327674.0042+ 700; %329771.1481;
+
+        options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
+        options.mechanization=2; % 1 for wander azimuth
+        options.mode=0; % 1 phi-, 2 psi- angle error formulation
+        options.imutype=5; % 5 for 3dm gx3 35, 7 for epson m-g362pdc1
+        options.dt=1/125;  %sampling interval
+        options.maxCovStep=3*options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
+
+        options.imufile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\IMU_MicroStrain\3DM-GX3 Data Log D.csv';
+        imuFileType=4; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
+ 
+        % the position of antenna at startTime
+        inixyz_ant=[592574.6611  -4856604.0417   4078414.4645]';
+        options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
+   
+        options.imuErrors=zeros(12,1);        
+        options.Vn=[0;0;0]; 
+        options.Ve=[0;0;0]; 
+        options.Vs0=[0;0;0];
+        options.Cb2imu=[0 -1 0; 1 0 0; 0 0 1]; 
+        options.Timu2body=zeros(3,1); % assume imu frame has the same origin as the body frame        
+        options.qb2n= roteu2qr('xyz', [0; 0; 8.9483]*pi/180); % obtained from H764G, yaw deg
+
+        options.InvalidateIMUerrors=false;
+        options.initAttVar=2*pi/180;
+        
+        % GPS options
+        useGPS=true; 
+        useGPSstd=true; % use the std in the rtklib GPS solutons
+        options.RTKlib_mtpl=5; % multiplier for RTKlib obtained std/cov
+        options.RTKlib_sol_std=[0.05,0.05,0.15;1.0,1.0,2.0;15,15,15]; % position std definition depending on the RTKLib solution (1, 2, 5)
+        options.Tant2body=[0.454; 0.746; -1.344]; % antenna position in the FDR body frame
+        % gps start and end time
+        gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
+      
+        gpspostype=-1;           % will be automatically determined
+        gpsfile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\GPS_rover_solution_best\Rear_antenna.pos';        
+        
+        % ZUPT options
+        % ZUPT start and end Time, n x 2 matrix, n is the number of segment        
+        zuptSE=[options.startTime, options.startTime+180];
+        options.sigmaZUPT = 0.1;% unit m/s
+        rateZUPT=round(sqrt(1/options.dt));
+        % NHC options
+        options.sigmaNHC = 0.1;% unit m/s
+        rateNHC=inf; % turn off NHC
+        % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
+        options.minNHCVel=2.0;        
+        options.useCam=false;
+    case 6
+        % test on Epson data integration with GPS data
+        % collected by GPS Van on 2015/11/11, session D    
+        isOutNED=true;       
+        filresfile=[resdir, 'filresult.bin']; % navigation states
+        imuresfile=[resdir, 'imuresult.bin']; % imu error terms
+        % imu options
+        options.startTime=327674.0042;
+        options.endTime= 327674.0042+ 700; %329771.1481;
+
+        options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
+        options.mechanization=2; % 1 for wander azimuth
+        options.mode=2; % 1 phi-, 2 psi- angle error formulation
+        options.imutype=7; % 5 for 3dm gx3 35, 7 for epson m-g362pdc1
+        options.dt=1/500;  %sampling interval
+        options.maxCovStep=5*options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
+
+        options.imufile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\IMU_Epson\20151111_140059_D_timetagged.csv';
+        imuFileType=5; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
+               
+        % the position of antenna at startTime
+        inixyz_ant=[592574.6611  -4856604.0417   4078414.4645]';
+        options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
+   
+        options.imuErrors=zeros(12,1);        
+        options.Vn=[0;0;0]; 
+        options.Ve=[0;0;0]; 
+        options.Vs0=[0;0;0];
+        options.Cb2imu=[1 0  0;  0 -1 0; 0 0 -1];% vehicle body frame to imu frame        
+        options.Timu2body=zeros(3,1); % assume imu frame and the body frame has same origin
+        options.qb2n= roteu2qr('xyz', [0; 0; 8.9483]*pi/180); % obtained from H764G, yaw deg
+
+        options.InvalidateIMUerrors=false;
+        options.initAttVar=2*pi/180;
+        
+        % GPS options
+        useGPS=true; 
+        useGPSstd=true; % use the std in the rtklib GPS solutons
+        options.RTKlib_mtpl=5; % multiplier for RTKlib obtained std/cov
+        options.RTKlib_sol_std=[0.05,0.05,0.15;1.0,1.0,2.0;15,15,15]; % position std definition depending on the RTKLib solution (1, 2, 5)
+        options.Tant2body=[0.454; 0.746; -1.344]; % antenna position in the FDR body frame
+        % gps start and end time
+        gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
+      
+        gpspostype=-1;           % will be automatically determined
+        gpsfile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\GPS_rover_solution_best\Rear_antenna.pos';        
+        
+        % ZUPT options
+        % ZUPT start and end Time, n x 2 matrix, n is the number of segment        
+        zuptSE=[options.startTime, options.startTime+180];
+        options.sigmaZUPT = 0.1;% unit m/s
+        rateZUPT=round(sqrt(1/options.dt));
+        % NHC options
+        options.sigmaNHC = 0.1;% unit m/s
+        rateNHC=inf; % turn off NHC
+        % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
+        options.minNHCVel=2.0;        
+        options.useCam=false;   
     otherwise
         error('Unsupported testing case!');
 end
 Counter.numimurecords=40; % the number of data put in preimudata
 % Initialize the model state and covariance of state, process noise and
 % measurment noise
-switch(mode)
+switch(options.mode)
     case 0
         filter =EKF_filter_eframe(options);
     case {1,2}
         filter =EKF_filter_nframe(options);
-    case 3
-        filter =EKF_filter_s0framelet(options);
 end
 
 preimudata=LinkedList();% record the previous imu data
@@ -269,13 +451,11 @@ preimutime=lastimu(1,end);
 imuctr=1;   % to count how many IMU data after the latest GPS observations
 % read the GPS data and align the GPS data with the imu data
 if(useGPS)
-    [fgps, gpsdata]=readgpsheader(gpsfile, gpsSE(1,1), gpspostype);
+    [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, gpsSE(1,1), gpspostype);
 else gpsdata=inf;
 end
-gpsctr=1;       % the number of GPS data that has been used
-
 %load the camera measurements with timestamp
-if(useCam)
+if(options.useCam)
     camdata=load_KinectDataset(camFile, options.startTime);
     euc2c0imu=zeros(size(camdata,1),4);
     euc2c0imu(:,1)=camdata(:,1);
@@ -308,7 +488,7 @@ while (~feof(fimu)&&curimutime<options.endTime)
     imuaccum=filter.ffun_state(imuaccum,[imudata(2:7);preimutime;curimutime]);
     
     %Update the covariance
-    if ((curimutime-covupt_time)>=options.maxCovStep)
+    if ((curimutime-covupt_time)>=options.maxCovStep  || curimutime>gpsdata(1))
         %propagate the covariance
         filter.ffun_covariance(imuaccum, covupt_time, curimutime );
         covupt_time=curimutime;
@@ -340,8 +520,7 @@ while (~feof(fimu)&&curimutime<options.endTime)
             predict=filter.Vn;
             H=[zeros(3) eye(3) zeros(3, filter.covDim-6)];
         else        
-        predict=filter.rvqs0(4:6);
-        H=sparse([zeros(3) eye(3) zeros(3,size(filter.p_k_k,1)-6)]);
+            assert(false);
         end
         R=eye(3)*options.sigmaZUPT^2;
         filter.correctstates(predict,measure, H,R);
@@ -376,27 +555,19 @@ while (~feof(fimu)&&curimutime<options.endTime)
             curvel=filter.Vn;
             predict=Cn2b(2:3,:)*curvel;
             H=[zeros(2,3) Cn2b(2:3,:) -Cn2b(2:3,:)*skew(curvel) zeros(2,filter.covDim-9)];
-        else            
-            Cs02s=quat2dcm_v000(filter.rvqs0(7:10));
-            Cs02b=filter.Cb2imu'*Cs02s;
-            predict=Cs02b(2:3,:)*filter.rvqs0(4:6);
-            larry=filter.Cb2imu'*skew(quatrot_v000(filter.rvqs0(7:10),filter.rvqs0(4:6),0));
-            H=sparse([zeros(2,9) Cs02b(2:3,:) larry(2:3,:) zeros(2,size(filter.p_k_k,1)-15)]);
+        else
+            assert(false);
         end
         measure=[0;0];
         R=eye(2)*options.sigmaNHC^2;
         filter.correctstates(predict,measure, H,R);
     end
  
-    %%Apply the  GPS observations    
-    gpsSErow=find(((gpsSE(:,1)<=gpsdata(1))&(gpsSE(:,2)>=gpsdata(1)))==1,1);
-    if (~isempty(gpsSErow) && curimutime>=gpsdata(1))
+    %%Apply the  GPS observations     
+    if (curimutime>=gpsdata(1))
         imuctr=0; % to count how many imu epochs after the recent gps observations
-        if(gpspostype<3)
-            gpsecef=ecef2geo_v000([gpsdata(2)/180*pi;gpsdata(3)/180*pi;gpsdata(4)],1);
-        else
-            gpsecef=gpsdata(2:4);
-        end
+        gpsecef=gpsdata(2:4);
+       
         measure=gpsecef;        
         if(strcmp(filter.tag, 'EKF_IMU_GPS_EFRM'))
             lever=quatrot_v000(filter.rvqs2e(7:10),filter.Tant2imu,0);
@@ -411,43 +582,76 @@ while (~feof(fimu)&&curimutime<options.endTime)
             lever=quatrot_v000(filter.qs2n,filter.Tant2imu,0);
             predict=Ce2n*posecef+lever;
             H=[eye(3) zeros(3) skew(lever) zeros(3,filter.covDim-9)];
-        else            
-            lever=quatrot_v000(filter.rvqs2e(7:10),filter.Tant2imu,0);
-            predict=filter.rvqs2e(1:3)+lever;
-            H=sparse([eye(3), skew(quatrot_v000(filter.rqs02e(4:7),filter.rvqs0(1:3),0)+lever),...
-                quat2dcm_v000(filter.rqs02e(4:7)),zeros(3), ...
-                -quat2dcm_v000(filter.rvqs2e(7:10))*skew(filter.Tant2imu), zeros(3,size(filter.p_k_k,1)-15)]);
+        else
+            assert(false);
         end
         % the following setting of noise variances is suitable for RTKlib output
         if(~useGPSstd)
             if(gpsdata(5)==1)
-                R=diag([0.05,0.05,0.15].^2);
+                R=diag(options.RTKlib_sol_std(1,:).^2);
             elseif(gpsdata(5)==2)
-                R=diag([1.0,1.0,2.0].^2);
+                R=diag(options.RTKlib_sol_std(2,:).^2);
             else
-                R=diag([15,15,15].^2);
+                R=diag(options.RTKlib_sol_std(3,:).^2);
             end
             if(~strcmp(filter.tag, 'EKF_IMU_GPS_NFRM'))
-                Ce2n=llh2dcm_v000(ecef2geo_v000(filter.rvqs2e(1:3,1),0),[0;1]);
+                if(strcmp(filter.tag, 'EKF_IMU_GPS_EFRM'))
+                    Ce2n=llh2dcm_v000(ecef2geo_v000(filter.rvqs2e(1:3,1),0),[0;1]);
+                else
+                    assert(false);
+                end
                 R=Ce2n'*R*Ce2n;
             end
         else
-            R=4*diag(gpsdata(7:9).^2);
-            if(gpspostype<3&&(~strcmp(filter.tag, 'EKF_IMU_GPS_NFRM')))
-                Ce2n=llh2dcm_v000(ecef2geo_v000(filter.rvqs2e(1:3,1),0),[0;1]);
-                R=Ce2n'*R*Ce2n;
-            elseif(gpspostype>2&&(strcmp(filter.tag, 'EKF_IMU_GPS_NFRM')))
+            R=cov2RTKlib(gpsdata(7:12)*options.RTKlib_mtpl,1);
+            if(strcmp(filter.tag, 'EKF_IMU_GPS_NFRM'))
                 R=filter.Cen*R*filter.Cen';
             end
         end
-        filter.correctstates(predict,measure, H,R);        
-        %Read the next gps data
-        [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype);
-       
+        
+        
+%         residual= predict- measure;
+%         gamma= residual'/(H*filter.p_k_k*H'+ R)*residual; % Mahalanobis distance
+%         if(gamma< chi2_3)
+        filter.correctstates(predict,measure, H,R);
+%         end
+        
+        %Read the next gps data that is within the specified sessions
+        gpsSErow=find(((gpsSE(:,1)<=gpsdata(1))&(gpsSE(:,2)>=gpsdata(1)))==1,1); % on which row/ session is the last gpsdata
+        lastgpstime =gpsdata(1); 
+      
+        assert(~isempty(gpsSErow));        
+        [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype);        
         if (gpsdata(1)>gpsSE(gpsSErow,2))
-            disp(['GPS outage starts from ' num2str(gpsdata(1)) 'GTOW sec!']);
-            gpsdata(1)=inf;% stop using GPS, dead reckoning
+            disp(['GPS outage starts from ' num2str(lastgpstime) 'GTOW sec!']);
+            % find the next session
+            nextSErow=0;
+            gpsSErow=find(((gpsSE(:,1)<=gpsdata(1))&(gpsSE(:,2)>=gpsdata(1)))==1,1);
+            if(isempty(gpsSErow))
+                for iota= 1: size(gpsSE,1)
+                    if gpsSE(iota,1)>= gpsdata(1)
+                        nextSErow= iota;                        
+                        break;
+                    end
+                end
+                if(nextSErow==0)
+                    disp(['GPS completely gone from ' num2str(lastgpstime) 'GTOW sec!']);
+                    gpsdata(1)=inf;% completely stop using GPS
+                else
+                    while(gpsdata(1)< gpsSE(nextSErow,1))
+                        [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype);                        
+                        while(gpsdata(1) > gpsSE(nextSErow,2) && nextSErow< size(gpsSE,1))
+                            nextSErow= nextSErow+1;                            
+                        end
+                    end
+                    disp(['GPS will resume from ' num2str(gpsdata(1)) 'GTOW sec!']);            
+                end
+            else
+                nextSErow = gpsSErow;
+                disp(['GPS resumes from ' num2str(gpsdata(1)) 'GTOW sec!']);
+            end         
         end
+        
     end
     % image measurement
     if(curimutime>=imgepoch)

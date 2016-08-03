@@ -34,5 +34,13 @@ Download the ekfmonoslam package, put all folders within ekfmonoslam into matlab
 
 Test data due to size will be made available upon request.
 
+#4. Simulate noisy IMU data given ground truth poses
+
+Suppose the ground truth SE(3) poses (3D position and 3DOF attitude) are given at a regular interval, e.g. 0.1s, the noisy IMU data at a particular frequency, e.g., 100Hz can be generated in two steps: 1, generate the continuous trajectory by interpolating the existing poses, differentiating the continuous trajectory will give angular rates and linear accelerations, for details, see [1]; 2, add noise to these true IMU samples, given error specs of a particular IMU model.
+
+In practice, first build and run the program in the folder SE3Interpolation. Two test cases are provided in SE3Interpolation, for both KITTI seq 00 and Tsukuba CG stereo dataset. To run it, you need to download at least one of these two datasets. This step will produce the true IMU samples. Then to add noise, call testAddImuError.m in utilities/tests folder.
 
 
+Reference
+
+[1] Jianzhu Huai, Charles K. Toth and Dorota A. Grejner-Brzezinska: Stereo-inertial odometry using nonlinear optimization. Proceedings of the 28th International Technical Meeting of The Satellite Division of the Institute of Navigation (ION GNSS+ 2015) 2015.

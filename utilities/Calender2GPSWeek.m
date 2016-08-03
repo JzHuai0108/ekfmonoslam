@@ -1,5 +1,5 @@
 function [weekSec, weekNum]=Calender2GPSWeek(bundle)
-
+% bundle is UTC time
 year=bundle(1);
 month=bundle(2);
 day=bundle(3);

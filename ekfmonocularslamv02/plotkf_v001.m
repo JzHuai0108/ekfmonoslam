@@ -98,8 +98,8 @@ if mm==19
     grid
     xlabel('Time [s]')
     ylabel('m')
-    legend('X','Y','Z')
-    title('Position RMS in ECEF XYZ');
+    legend('N','E','D')
+    title('Position RMS in NED');
     if isPrintToFile
         print(f(nextFig), '-dtiff', [plotDir 'rms_pos']);
     end

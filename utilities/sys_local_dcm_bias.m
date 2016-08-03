@@ -1,7 +1,8 @@
 % system process model in local s0 frame with dcm formulation, Cs0e is the
 % transformation from the sensor local s0 frame to e-frame
 % rqs02e, r s0 in e, q s0 2e, rvqs0, rs in s0, vs in s0, qs0 2s
-% acc, m/s^2, acc by imu in s frame, gyro, rad/s, angular rate by imu
+% acc, m/s^2, acc by imu in s frame with estimated IMU errors removed,
+% gyro, rad/s, angular rate by imu with estimated IMU errors removed
 % w.r.t i frame coordinated in s frame, dt, time interval for covariance update
 % modelNo, imu model for bias and scale factor errors
 function [STM Qd]=sys_local_dcm_bias(rqs02e, rvqs0, acc, gyro, dt, imutype, modelNo)

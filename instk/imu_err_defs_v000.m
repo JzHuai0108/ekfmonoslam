@@ -139,7 +139,12 @@ switch (imutype)
         IMU_ERRDEF.gyro_bias_Q=(3*(pi/180.0)/3600)^2*(2/IMU_ERRDEF.gyro_bias_Tc); % 3 deg/hr 
         IMU_ERRDEF.initgyro_bias_err=0.5*pi/180; %.5 deg turn on bias
         IMU_ERRDEF.gyro_bias_var=(3*(pi/180.0)/3600)^2; %3 deg/hr
-   
+   % copied from microstrain
+        IMU_ERRDEF.acc_scale_var=(500.0*1.0e-3)^2; % 500 ppm*1000
+        IMU_ERRDEF.acc_scale_Q=25*100*1e-6;    %ppt^2, Tc~3600sec
+        IMU_ERRDEF.gyro_scale_var = (500*1.0e-3)^2; % 500 ppm*1000
+        IMU_ERRDEF.gyro_scale_Q=25*100*1e-6;    %ppt^2, Tc~3600sec
+        
         IMU_ERRDEF.acc_vrw= (0.04/60)^2; % 0.04 m/s/sqrt(hr)    
         IMU_ERRDEF.gyro_arw = (10*0.1*pi/180/60)^2; % 0.1 deg/sqrt(hr), but in tests I found it is much larger, so multiply it by 10
 end
