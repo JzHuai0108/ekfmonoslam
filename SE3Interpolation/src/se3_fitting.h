@@ -1,3 +1,6 @@
+#ifndef SE3_FITTING_H_
+#define SE3_FITTING_H_
+
 #include <iostream>
 #include <vector>
 
@@ -5,13 +8,22 @@
 
 #include "sophus/se3.hpp"
 
-// interpolate IMU data given poses and their uniform timestamps
-// input: q02n, times: q_0^w, q_1^w, ..., q_n^w; N=n+1 poses and their timestamps; also outputFreq
-// output: samplePoses: sampled poses; samples: output timestamps, acceleration of sensor by combined force in world frame,
-// and angular rate of sensor w.r.t world frame represented in sensor frame, and velocity of sensor in world frame
+// interpolate IMU data given poses and their near uniform timestamps
+// input: q02n and times of the same length: q_0^w at t_0, q_1^w at t_1,
+// ..., q_n^w at t_n
+// N=n+1 sensor to world transforms and their timestamps; also outputFreq
+
+// output: samplePoses and samples are sampled sensor to world transforms and
+// inertial samples. Each sample contains timestamps, accel of the sensor
+// by the combined force (applied force and gravity) in the world frame,
+// and angular rate of the sensor w.r.t the world frame represented in 
+// the sensor frame, and velocity of the sensor in the world frame
+// output timestamps are times[0], times[0]+1/outputFreq, 
+// times[0]+2/outputFreq, ...
+
 template<class Scalar>
 void InterpolateIMUData(const std::vector<Sophus::SE3Group<Scalar> > &q02n,const std::vector<Scalar>& times, const Scalar outputFreq,
-                        std::vector<Eigen::Matrix<Scalar, 4,4 > >& samplePoses, std::vector<Eigen::Matrix<Scalar, 10, 1> >& samples)
+                        std::vector<Eigen::Matrix<Scalar, 4, 4 > >& samplePoses, std::vector<Eigen::Matrix<Scalar, 10, 1> >& samples)
 {
     typedef Sophus::SO3Group<Scalar> SO3Type;
     typedef Sophus::SE3Group<Scalar> SE3Type;
@@ -43,12 +55,10 @@ void InterpolateIMUData(const std::vector<Sophus::SE3Group<Scalar> > &q02n,const
     bm32nm1[lineNum+1]=q02n[lineNum-1]*q02n[lineNum-2].inverse()*q02n[lineNum-1];
     Omegam22nm1[lineNum]=SE3Type::log(bm32nm1[lineNum].inverse()*bm32nm1[lineNum+1]);
 
-    std::cout<<"take derivatives to compute acceleration and angular rate"<<std::endl;
+    std::cout<<"Take derivatives to compute acceleration and angular rate"<<std::endl;
     int dataCount=floor((*(times.rbegin())-1e-6-times[0])*outputFreq)+1; // how many output data, from t_0 up to close to t_n
     samplePoses.resize(dataCount);
-    samples.resize(dataCount); // output timestamps, acceleration of sensor in world frame,
-    // and angular rate of sensor w.r.t world frame represented in sensor frame
-
+    samples.resize(dataCount);
     Eigen::Matrix<Scalar, 4,4> sixC; // six times C matrix
     sixC<<6, 0, 0, 0,
             5, 3, -3, 1,
@@ -104,9 +114,57 @@ void InterpolateIMUData(const std::vector<Sophus::SE3Group<Scalar> > &q02n,const
                 tripleA[0].matrix()*dotDdotAs[1]*dotDdotAs[2]+dotDdotAs[0]*tripleA[1].matrix()*dotDdotAs[2]);
 
         samplePoses[i]=Ts2w.matrix();
-        samples[i].segment(1,3)=dotDdotTs[1].col(3).head(3);//$a_s^w$        
+        samples[i].segment(1,3)=dotDdotTs[1].col(3).head(3);//$a_s^w$
         samples[i].segment(4,3)=SO3Type::vee(Ts2w.rotationMatrix().transpose()*dotDdotTs[0].topLeftCorner(3,3));//$\omega_{ws}^s$
-        samples[i].tail(3)=dotDdotTs[0].col(3).head(3);//$v_s^w$        
+        samples[i].tail(3)=dotDdotTs[0].col(3).head(3);//$v_s^w$
     }
 }
 
+//input: lat and long, height is not needed
+//output: Ce2n
+static Eigen::Matrix3d llh2dcm( Eigen::Vector3d &llh)
+{
+    double sL = sin(llh[0]);
+    double cL = cos(llh[0]);
+    double sl = sin(llh[1]);
+    double cl = cos(llh[1]);
+
+    Eigen::Matrix3d Ce2n;
+    Ce2n<< -sL * cl, -sL * sl, cL ,  -sl, cl, 0 , -cL * cl, -cL * sl, -sL;
+    return Ce2n;
+}
+//output rotation matrix about 3 axis for rad in radians
+// if we rotate b frame about its 3 axis by rad into a frame, then =x^a*R3(rad)*x^b
+static Eigen::Matrix3d RotMat3(double rad)
+{
+    double cr = cos(rad);
+    double sr = sin(rad);
+    Eigen::Matrix3d Rb2a;
+    Rb2a<<cr, sr, 0,  -sr, cr, 0,  0, 0, 1;
+    return Rb2a;
+}
+
+//eul [R;P;Y] defined in "n": rotate "n" to obtain "b"
+//result: Cb2n (from b to n) s.t., Cb2n=R3(-Y)R2(-P)R1(-R)
+template<class Scalar>
+static Eigen::Matrix<Scalar, 3,3 > roteu2ro(Eigen::Matrix<Scalar, 3, 1> eul)
+{
+    Scalar cr = cos(eul[0]); Scalar sr = sin(eul[0]);	//roll
+    Scalar cp = cos(eul[1]); Scalar sp = sin(eul[1]);	//pitch
+    Scalar ch = cos(eul[2]); Scalar sh = sin(eul[2]);	//heading
+    Eigen::Matrix<Scalar, 3, 3> dcm;
+    dcm.setZero();
+    dcm(0,0) = cp * ch;
+    dcm(0,1) = (sp * sr * ch) - (cr * sh);
+    dcm(0,2) = (cr * sp * ch) + (sh * sr);
+
+    dcm(1,0) = cp * sh;
+    dcm(1,1) = (sr * sp * sh) + (cr * ch);
+    dcm(1,2) = (cr * sp * sh) - (sr * ch);
+
+    dcm(2,0) = -sp;
+    dcm(2,1) = sr * cp;
+    dcm(2,2) = cr * cp;
+    return dcm;
+}
+#endif // SE3_FITTING_H_
