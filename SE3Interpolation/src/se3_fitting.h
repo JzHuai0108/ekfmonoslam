@@ -22,8 +22,11 @@
 // times[0]+2/outputFreq, ...
 
 template<class Scalar>
-void InterpolateIMUData(const std::vector<Sophus::SE3Group<Scalar> > &q02n,const std::vector<Scalar>& times, const Scalar outputFreq,
-                        std::vector<Eigen::Matrix<Scalar, 4, 4 > >& samplePoses, std::vector<Eigen::Matrix<Scalar, 10, 1> >& samples)
+void InterpolateIMUData(const std::vector<Sophus::SE3Group<Scalar>, Eigen::aligned_allocator<Sophus::SE3Group<Scalar> > > &q02n,
+                        const std::vector<Scalar>& times,
+                        const Scalar outputFreq,
+                        std::vector<Eigen::Matrix<Scalar, 4, 4>, Eigen::aligned_allocator<Eigen::Matrix<Scalar, 4, 4> > >& samplePoses,
+                        std::vector<Eigen::Matrix<Scalar, 10, 1>, Eigen::aligned_allocator<Eigen::Matrix<Scalar, 10, 1> > >& samples)
 {
     typedef Sophus::SO3Group<Scalar> SO3Type;
     typedef Sophus::SE3Group<Scalar> SE3Type;
@@ -31,8 +34,8 @@ void InterpolateIMUData(const std::vector<Sophus::SE3Group<Scalar> > &q02n,const
 
     std::cout<<"Assigning control points"<<std::endl;
     int lineNum=q02n.size();
-    std::vector<SE3Type> bm32nm1(lineNum+2); // b_-3^w, b_-2^w, ..., b_(n-1)^w
-    std::vector<Tangent> Omegam22nm1(lineNum+1); // $\Omega_-2, \Omega_-1, ..., \Omega_n-1$ where $\Omega_j=log((b_j-1)\b_j)$
+    std::vector<SE3Type, Eigen::aligned_allocator<SE3Type> > bm32nm1(lineNum+2); // b_-3^w, b_-2^w, ..., b_(n-1)^w
+    std::vector<Tangent, Eigen::aligned_allocator<Tangent> > Omegam22nm1(lineNum+1); // $\Omega_-2, \Omega_-1, ..., \Omega_n-1$ where $\Omega_j=log((b_j-1)\b_j)$
 // assume initial velocity is zero
 //    Omegam22nm1[1]=SE3Type::log(q02n[0].inverse()*q02n[1]); //\Omega_-1
 //    Omegam22nm1[0]=SE3Type::vee(-SE3Type::exp(Omegam22nm1[1]/6).matrix()*SE3Type::hat(Omegam22nm1[1])*
@@ -66,12 +69,13 @@ void InterpolateIMUData(const std::vector<Sophus::SE3Group<Scalar> > &q02n,const
             0, 0, 0, 1;
     Scalar timestamp, Deltat, ut;
     Eigen::Matrix<Scalar, 4,1> utprod, tildeBs, dotTildeBs, ddotTildeBs;
-    std::vector<SE3Type> tripleA(3);//A_1, A_2, A_3
-    std::vector<Eigen::Matrix<Scalar, 4,4> > dotDdotAs(6);
+    std::vector<SE3Type, Eigen::aligned_allocator<SE3Type> > tripleA(3);//A_1, A_2, A_3
+    std::vector<Eigen::Matrix<Scalar, 4, 4>, Eigen::aligned_allocator<Eigen::Matrix<Scalar, 4, 4> > > dotDdotAs(6);
     //$\dot{A_1}, \dot{A_2}, \dot{A_3}, \ddot{A_1}, \ddot{A_2}, \ddot{A_3}$
     // where $p(t)=b_{i-3}*A_1*A_2*A_3$ for $t\in[t_i, t_{i+1})$
     SE3Type Ts2w; //T_s^w
-    std::vector<Eigen::Matrix<Scalar, 4,4> > dotDdotTs(2); //$\dot{T_s^w}, \ddot{T_s^w}$
+    std::vector<Eigen::Matrix<Scalar, 4, 4>,
+            Eigen::aligned_allocator<Eigen::Matrix<Scalar, 4, 4>> > dotDdotTs(2); //$\dot{T_s^w}, \ddot{T_s^w}$
     int tickIndex=0; // where is a timestamp in times, s.t. $timestamp\in[t_{tickIndex}, t_{tickIndex+1})$
     for (int i=0; i<dataCount;++i){
         timestamp=times[0]+i/outputFreq;
@@ -133,6 +137,7 @@ static Eigen::Matrix3d llh2dcm( Eigen::Vector3d &llh)
     Ce2n<< -sL * cl, -sL * sl, cL ,  -sl, cl, 0 , -cL * cl, -cL * sl, -sL;
     return Ce2n;
 }
+
 //output rotation matrix about 3 axis for rad in radians
 // if we rotate b frame about its 3 axis by rad into a frame, then =x^a*R3(rad)*x^b
 static Eigen::Matrix3d RotMat3(double rad)

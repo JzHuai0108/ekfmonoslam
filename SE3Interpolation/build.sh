@@ -12,12 +12,13 @@ else
 fi
 
 FULL_PATH=`pwd`
-INSTALL_FOLDER=$FULL_PATH/build/slam_devel
-rm -rf build
+INSTALL_FOLDER=$FULL_PATH/Thirdparty/slam_devel
+rm -rf Thirdparty
 mkdir -p $INSTALL_FOLDER
 
-rm -rf Thirdparty
-mkdir -p Thirdparty
+rm -rf build
+mkdir -p build
+
 cd Thirdparty
 echo "Configuring and building Thirdparty/Sophus ..."
 git clone https://github.com/stevenlovegrove/Sophus.git

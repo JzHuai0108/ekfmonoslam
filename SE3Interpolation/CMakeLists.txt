@@ -28,4 +28,5 @@ ${GeographicLib_LIBRARIES}
 add_executable(${PROJECT_NAME} src/test_se3_fitting.cpp)
 target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
 
+add_executable(upsample_se3 src/upsample_se3_poses.cpp)
 

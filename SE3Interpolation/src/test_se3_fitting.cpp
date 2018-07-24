@@ -23,8 +23,11 @@
 // fixedg, do we use constant gravity for the whole trajectory or recompute it for every point,
 // note it is expensive to compute gravity every time, do not do this by default
 template<class Scalar>
-void ConvertToSensorFrame(const std::vector<Eigen::Matrix<Scalar, 4, 4> >& samplePoses, std::vector<Eigen::Matrix<Scalar, 10, 1> >& samples,
-                          const Sophus::SE3Group<Scalar> Pw2e, std::vector<Eigen::Vector3d>& gravitySamples, bool addGnOmega=false, bool fixedG=true)
+void ConvertToSensorFrame(const std::vector<Eigen::Matrix<Scalar, 4, 4>, Eigen::aligned_allocator<Eigen::Matrix<Scalar, 4, 4> > >& samplePoses,
+                          std::vector<Eigen::Matrix<Scalar, 10, 1>, Eigen::aligned_allocator<Eigen::Matrix<Scalar, 10, 1> > >& samples,
+                          const Sophus::SE3Group<Scalar> Pw2e,
+                          std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> >& gravitySamples,
+                          bool addGnOmega=false, bool fixedG=true)
 {
     typedef Sophus::SE3Group<Scalar> SE3Type;
     double WIE_E=7292115e-11;    //earth's rotaion rate
@@ -120,9 +123,9 @@ void SimulateIMU(int testCase=0)
     Eigen::Matrix<Scalar, 3,3 > Rs2c;//the rotation matrix from IMU sensor frame to camera frame
     Point tsinc;//the coordinate of sensor frame origin in camera frame
     SE3Type Ts2c, Tc2s;
-    std::vector<SE3Type> q02n; //q_0^w, q_1^w, ..., q_n^w; N=n+1 poses, sensor frame to world frame transformations
+    std::vector<SE3Type, Eigen::aligned_allocator<SE3Type> > q02n; //q_0^w, q_1^w, ..., q_n^w; N=n+1 poses, sensor frame to world frame transformations
 
-    std::vector<Scalar > times; //timestamps for N poses
+    std::vector<Scalar> times; //timestamps for N poses
     std::string tempStr;
     if(testCase==0){ //tailored for KITTI odometry dataset color seq 00
         poseFile="/media/jhuai/Mag/KITTISeq00/00.txt";//stores the transform Tc2w, camera to world
@@ -244,8 +247,8 @@ void SimulateIMU(int testCase=0)
             times[j]=j/inputFreq;
         }
     }
-    std::vector<Eigen::Matrix<Scalar, 4,4 > > samplePoses;
-    std::vector<TAO> samples;
+    std::vector<Eigen::Matrix<Scalar, 4, 4>, Eigen::aligned_allocator<Eigen::Matrix<Scalar, 4, 4> > > samplePoses;
+    std::vector<TAO, Eigen::aligned_allocator<TAO>> samples;
     InterpolateIMUData(q02n, times, outputFreq, samplePoses,  samples);
 
     //add gravity and earth rotation effect, optional
@@ -264,7 +267,7 @@ void SimulateIMU(int testCase=0)
     std::ofstream poseptr(debugPoseFile);
 
     std::ofstream sampleptr(outputFile);
-    sampleptr<<"%% timestamp(sec), $a_{is}^s$(m/s^2), $\\Omega_{is}^s$(rad/sec), $v_{ws}^w$(m/s), $gravity^e$."<<std::endl;
+    sampleptr<<"%timestamp(sec), $a_{is}^s$(m/s^2), $\\Omega_{is}^s$(rad/sec), $v_{ws}^w$(m/s), $gravity^e$."<<std::endl;
     std::ofstream initptr(initFile);
     initptr<<"initial lat(deg), lon(deg), height(m) in WGS84 CRS"<<std::endl;
     initptr.precision(10);
@@ -274,7 +277,7 @@ void SimulateIMU(int testCase=0)
     initptr<<"Ts2c transformation matrix from IMU sensor frame to camera frame used in POSE INPUT file(row major)"<<std::endl;
     initptr<<Ts2c.matrix().block(0,0,3,4)<<std::endl;
     initptr.close();
-    std::vector<Eigen::Vector3d> gravitySamples;
+    std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > gravitySamples;
     ConvertToSensorFrame(samplePoses,samples, Pw2e, gravitySamples, addGnOmega, fixedG);
     int dataCount=samplePoses.size();
     for (int i=0; i<dataCount;++i){

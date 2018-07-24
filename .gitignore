@@ -4,3 +4,5 @@ voicebox/
 SE3Interpolation/Thirdparty/
 
 SE3Interpolation/build/
+
+SE3Interpolation/CMakeLists\.txt\.user
