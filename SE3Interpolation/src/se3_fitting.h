@@ -126,7 +126,7 @@ void InterpolateIMUData(const std::vector<Sophus::SE3Group<Scalar>, Eigen::align
 
 //input: lat and long, height is not needed
 //output: Ce2n
-static Eigen::Matrix3d llh2dcm( Eigen::Vector3d &llh)
+inline Eigen::Matrix3d llh2dcm( Eigen::Vector3d &llh)
 {
     double sL = sin(llh[0]);
     double cL = cos(llh[0]);
@@ -140,7 +140,7 @@ static Eigen::Matrix3d llh2dcm( Eigen::Vector3d &llh)
 
 //output rotation matrix about 3 axis for rad in radians
 // if we rotate b frame about its 3 axis by rad into a frame, then =x^a*R3(rad)*x^b
-static Eigen::Matrix3d RotMat3(double rad)
+inline Eigen::Matrix3d RotMat3(double rad)
 {
     double cr = cos(rad);
     double sr = sin(rad);

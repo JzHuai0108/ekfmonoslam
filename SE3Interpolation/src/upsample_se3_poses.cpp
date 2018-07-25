@@ -79,7 +79,7 @@ int main(int argc, const char* argv[]) {
             sampleptr << samples[i][j+4] << delimiter;
         for (int j=0; j<2; ++j)
             sampleptr << samples[i][j+1] << delimiter;
-        sampleptr << samples[i][6] << std::endl;
+        sampleptr << samples[i][3] << std::endl;
     }
     sampleptr.close();
     std::cout << "Interpolated pseudo inertial data saved to " << inertialSampleFile << std::endl;
