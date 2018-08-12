@@ -8,32 +8,43 @@ int main(int argc, const char* argv[]) {
     typedef Sophus::SE3Group<Scalar> SE3Type;
     typedef Eigen::Matrix<Scalar, 10, 1> TAO; // time, acceleration(\ddot{t}_s^w), angular rate(\omega_{is}^s), and velocity((\dot{t}_s^w))
 
-    std::string datasetPath = "/dataset/align_visual_inertial_in_time/2017-12-05_07-27-31__B1_1205_1";
+    std::string datasetPath;
+    std::string poseFile; // each row: time[sec] tx[m] ty[m] tz[m] qx qy qz qw of sensor to world transform
+    std::string samplePoseFile; // each row as above
+    std::string inertialSampleFile; // each row: time[sec], gx[rad/s], gy, gz, ax, ay, az[m/s^2],
+    // angular rate is \omega_{is}^s, acceleration is \ddot{t}_s^w
+
     Scalar outputFreq = 400;
     if (argc < 2) {
-      std::cerr << "Example Usage:" << argv[0] << " datasetPath outputFreq" << std::endl;
+      std::cerr << "Example Usage:" << argv[0] << " poseTxtFile inertialSampleOutputCsvFile outputFreq" << std::endl;
       std::cerr << "For better accuracy in later-on correlation, outputFreq "
                    "is at least twice of the fastest measurement frequency" << std::endl;
       return 1;
     }
+    
+    if (argc > 1) {
+      poseFile = argv[1];
+      const size_t last_slash_idx = poseFile.find_last_of("/\\");
+      if (std::string::npos != last_slash_idx)
+      {
+          datasetPath = poseFile.substr(0, last_slash_idx);
+      }
+    }
 
-    if (argc > 1)
-      datasetPath = argv[1];
     if (argc > 2)
-      outputFreq = std::atof(argv[2]);
+      inertialSampleFile = argv[2];
+    else
+      inertialSampleFile = datasetPath + "/UpsampledPseudoImu.csv";
 
-    std::string poseFile; // each row: time[sec] tx[m] ty[m] tz[m] qx qy qz qw of sensor to world transform
-    std::string samplePoseFile; // each row as above
-    std::string inertialSampleFile; // each row: time[sec] gx[rad/s] gy gz ax ay az[m/s^2],
-    // angular rate is \omega_{is}^s, acceleration is \ddot{t}_s^w
+    if (argc > 3)
+      outputFreq = std::atof(argv[3]);
+    
 
     std::vector<SE3Type, Eigen::aligned_allocator<SE3Type> > q02n; // q_0^w, q_1^w, ..., q_n^w; N=n+1 poses, sensor frame to world frame transformations
     std::vector<Scalar> times; // timestamps for N poses
 
-    poseFile = datasetPath + "/FrameTrajectory.txt";
     samplePoseFile = datasetPath + "/UpsampledFrameTrajectory.txt";
-    inertialSampleFile = datasetPath + "/UpsampledPseudoImu.csv";
-
+    
     q02n.reserve(30*100);
     times.reserve(30*100);
     // read poses
@@ -42,14 +53,18 @@ int main(int argc, const char* argv[]) {
     Eigen::Matrix<Scalar,8,1> transMat;
     Scalar precursor=0;
     int lineNum=0;
-    while(!dataptr.eof()){
-        dataptr>>precursor;
-        if(dataptr.fail())
+    std::string line;
+    while(std::getline(dataptr, line)) {
+        if (line.find('%') != std::string::npos)
+            continue;
+        if (line.length() < 8)
             break;
-
+        std::stringstream stream(line);
+        stream>>precursor;
+        
         transMat[0]=precursor;
         for (int j=1; j<8; ++j)
-            dataptr>>transMat[j];
+            stream>>transMat[j];
         ++lineNum;
         times.push_back(transMat[0]);
         Eigen::Quaternion<Scalar> q_ws(transMat[7], transMat[4], transMat[5], transMat[6]);
@@ -73,7 +88,7 @@ int main(int argc, const char* argv[]) {
     char delimiter = ',';
 
     for (int i=0; i<dataCount;++i) {
-        sampleptr << std::setprecision(12) << std::defaultfloat << samples[i][0] << delimiter;
+        sampleptr << std::setprecision(20) << std::defaultfloat << samples[i][0] << delimiter;
         sampleptr << std::setprecision(6);
         for (int j=0; j<3; ++j)
             sampleptr << samples[i][j+4] << delimiter;
