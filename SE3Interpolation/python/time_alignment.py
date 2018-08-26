@@ -211,12 +211,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--angular_rate_file',
-        required=True,
+        required=False,
         help='The file containing the time stamped angular rates. (e.g. measured by gyro)')
+    parser.add_argument(
+        '--poses_B_H_file',
+        required=False,
+        help='The file containing the time stamped poses '
+             '(e.g. hand poses in an earth-fixed Base frame).'
+             ' You may either provide the angular_rate_file or poses_B_H_file.')
     parser.add_argument(
         '--poses_W_E_file',
         required=True,
-        help='The file containing the time stamped poses. (e.g. Eye poses in World frame)')
+        help='The file containing the time stamped poses. (e.g. Eye poses in an earth-fixed World frame)')
 
     parser.add_argument(
         '--upsample_se3_binary',
@@ -230,28 +236,42 @@ if __name__ == '__main__':
                         help='Visualize the poses.',
                         action='store_true')
     if len(sys.argv) < 2:
-        print("Example usage: {} --angular_rate_file "
+        print("Example usage 1: {} --angular_rate_file "
               "/visual_inertial_data/8-4-2018/raw_accel_gyro.csv"
               " --poses_W_E_file /visual_inertial_data/8-4-2018/FrameTrajectory.txt"
               " --upsample_se3_binary /ekfmonoslam/SE3Interpolation/build/upsample_se3"
-              " --visualize True".format(sys.argv[0]))
+              " --visualize".format(sys.argv[0]))
+        print("Example usage 2: {} --poses_B_H_file "
+              "/visual_inertial_data/8-4-2018/lidarposes.txt"
+              " --poses_W_E_file /visual_inertial_data/8-4-2018/FrameTrajectory.txt"
+              " --upsample_se3_binary /ekfmonoslam/SE3Interpolation/build/upsample_se3"
+              " --visualize".format(sys.argv[0]))
     args = parser.parse_args()
 
-    print("Sampling angular rates from input SE3 poses...")
+    print("Sampling angular rates from input SE3 poses of {}".format(args.poses_W_E_file))
 
-    sampled_rate_csv = os.path.join(os.path.dirname(args.poses_W_E_file), "UpsampledPseudoImu.csv")
+    sampled_rate_csv = os.path.join(os.path.dirname(args.poses_W_E_file), "UpsampledPseudoImuE.csv")
     output_freq = 400
     commandlist = [args.upsample_se3_binary, args.poses_W_E_file, sampled_rate_csv, str(output_freq)]
     subprocess.call(commandlist)
+
+    if args.poses_B_H_file:
+        if args.angular_rate_file is not None:
+            raise Exception("Only angular_rate_file or poses_B_H_file is needed")
+        print("Sampling angular rates from input SE3 poses of {}".format(args.poses_B_H_file))
+        args.angular_rate_file = os.path.join(os.path.dirname(args.poses_B_H_file), "UpsampledPseudoImuH.csv")
+        output_freq = 400
+        commandlist = [args.upsample_se3_binary, args.poses_B_H_file, args.angular_rate_file, str(output_freq)]
+        subprocess.call(commandlist)
 
     print("Reading data from files...")
     (time_stamped_rates_E, times_E, rates_E) = read_time_stamped_angular_rate_from_file(sampled_rate_csv)
     print("Found ", time_stamped_rates_E.shape[
         0], " angular rates in file: ", sampled_rate_csv)
 
-    (time_stamped_poses_H, times_H,
+    (time_stamped_rates_H, times_H,
      rates_H) = read_time_stamped_angular_rate_from_file(args.angular_rate_file)
-    print("Found ", time_stamped_poses_H.shape[0], " rates in file: ", args.angular_rate_file)
+    print("Found ", time_stamped_rates_H.shape[0], " rates in file: ", args.angular_rate_file)
 
     print("Computing time offset...")
     filtering_config = FilteringConfig()

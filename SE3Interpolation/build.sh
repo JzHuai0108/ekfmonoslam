@@ -1,10 +1,10 @@
 # Example usage
-# ./build.sh /opt/ros/kinetic/share/OpenCV-3.2.0-dev /usr/include/eigen3
+# ./build.sh /opt/ros/kinetic/share/OpenCV-3.3.1-dev /usr/include/eigen3
 OPENCV_CONFIG_PATH=$1
 EIGEN3_INCLUDE_FOLDER=$2
 if [[ -z $OPENCV_CONFIG_PATH ]] || [[ -z $EIGEN3_INCLUDE_FOLDER ]]; then
     echo "Usage: " $0 " OPENCV_CONFIG_PATH EIGEN3_INCLUDE_FOLDER"
-    echo "Ex. " $0 " /opt/ros/kinetic/share/OpenCV-3.2.0-dev /usr/include/eigen3"
+    echo "Ex. " $0 " /opt/ros/kinetic/share/OpenCV-3.3.1-dev /usr/include/eigen3"
     exit -1
 else
     echo "OPENCV_CONFIG_PATH " $OPENCV_CONFIG_PATH
@@ -22,9 +22,9 @@ mkdir -p build
 cd Thirdparty
 echo "Configuring and building Thirdparty/Sophus ..."
 git clone https://github.com/stevenlovegrove/Sophus.git
-git checkout b474f05
 
 cd Sophus
+git checkout b474f05
 rm -rf build
 mkdir -p build
 cd build

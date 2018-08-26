@@ -1,4 +1,5 @@
 #include "se3_fitting.h"
+#include <algorithm> // count
 #include <fstream>
 #include <iomanip>
 
@@ -54,17 +55,31 @@ int main(int argc, const char* argv[]) {
     Scalar precursor=0;
     int lineNum=0;
     std::string line;
+    char input_delimiter = '\0';
     while(std::getline(dataptr, line)) {
         if (line.find('%') != std::string::npos)
             continue;
         if (line.length() < 8)
             break;
+        if (input_delimiter == '\0') {
+            size_t num_comma = std::count(line.begin(), line.end(), ',');
+            if (num_comma > 6)
+                input_delimiter = ',';
+            else
+                input_delimiter = ' ';
+        }
         std::stringstream stream(line);
         stream>>precursor;
         
         transMat[0]=precursor;
-        for (int j=1; j<8; ++j)
-            stream>>transMat[j];
+        if (input_delimiter == ' ') {
+            for (int j=1; j<8; ++j)
+                stream >> transMat[j];
+        } else {
+            char trash_delimiter = ',';
+            for (int j=1; j<8; ++j)
+                stream >> trash_delimiter >> transMat[j];
+        }
         ++lineNum;
         times.push_back(transMat[0]);
         Eigen::Quaternion<Scalar> q_ws(transMat[7], transMat[4], transMat[5], transMat[6]);
