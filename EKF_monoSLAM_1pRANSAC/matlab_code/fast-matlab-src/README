@@ -1,0 +1,46 @@
+FAST corner detection in MATLAB. -- Edward Rosten
+
+
+Five functions are provided:
+
+fast_corner_detect_9
+fast_corner_detect_10
+fast_corner_detect_11
+fast_corner_detect_12
+fast_nonmax
+
+for corner detection and nonmaximal suppression. Online help
+is provided for all these functions, and an example is provided
+in example.m
+
+
+
+For more information on the FAST detector, visit the FAST home page at
+http://mi.eng.cam.ac.uk/~er258/work/fast.html
+
+If you use this in academic work, then please cite the following two papers:
+    Fusing Points and Lines for High Performance Tracking, E. Rosten and T. Drummond, ICCV 2005
+    Machine learning for high-speed corner detection, E. Rosten and T. Drummond, ECCV 2006
+The Bibtex entries are:
+
+@inproceedings{rosten_2005_tracking,
+    title       =    "Fusing points and lines for high performance tracking.",
+    author      =    "Edward Rosten and Tom Drummond",
+    year        =    "2005",
+    month       =    "October",
+    pages       =    "1508--1511",
+    volume      =    "2",
+    booktitle   =    "IEEE International Conference on Computer Vision",
+    notes       =    "Oral presentation",
+    url         =    "http://mi.eng.cam.ac.uk/~er258/work/rosten_2005_tracking.pdf"
+}
+
+@inproceedings{rosten_2006_machine,
+    title       =    "Machine learning for high-speed corner detection",
+    author      =    "Edward Rosten and Tom Drummond",
+    year        =    "2006",
+    month       =    "May",
+    booktitle   =    "European Conference on Computer Vision (to appear)",
+    notes       =    "Poster presentation",
+    url         =    "http://mi.eng.cam.ac.uk/~er258/work/rosten_2006_machine.pdf"
+}

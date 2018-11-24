@@ -5,3 +5,10 @@ SE3Interpolation/Thirdparty/
 SE3Interpolation/build/
 
 SE3Interpolation/CMakeLists\.txt\.user
+
+EKF_monoSLAM_1pRANSAC/sequences/
+EKF_monoSLAM_1pRANSAC/figures/
+
+mexopencv/
+
+
