@@ -30,7 +30,8 @@
 % (8) no gps data, only initial values for static H764G IMU does not
 % converge unless ZUPT is applied. In this almost free inertial mode, NHC
 % can have a little adverse effect.
-addpath('..\instkhuai11112013'); % imu functions
+addpath('..\instk'); % imu functions
+addpath('..\utilities'); % imu functions
 addpath('..\toolbox_calib');% to use project_point2.m and normalize.m
 addpath('..\mexopencv\');% cvcalcopticflowpyrlk and cvgoodfeaturestotrack
 addpath('..\voicebox\'); % for rotro2qr and rotqr2eu, they are more robuts
