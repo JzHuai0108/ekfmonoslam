@@ -36,6 +36,7 @@ switch experim
         % use of gravity magnitude constraint does not show much improvement
         % it is advised to turn off scale factor estimate, let gravity and
         % RS2C float
+        % in this case body frame is the IMU frame, forward right down(FRD) wrt the van
         isOutNED=true;
      
         filresfile=[resdir, 'filresult.bin']; % navigation states
@@ -92,11 +93,9 @@ switch experim
         options.useCam=false;
         camFile=options.imufile; % where the camera measurements come from
         options.camPoseFile=[resdir, 'kinectPose.txt']; % output camera position and attitude
-        deltaPhi=[0;0;0]; % [-0.487; 1.106; -0.518]/180*pi;
-        options.Cimu2cam=rotqr2ro(rvec2quat_v000(deltaPhi))*[0,0,1;-1,0,0;0,-1,0]'; % (Rc2s)'
-        options.Tcam2body=[3; -6.2; -4.05]*1e-2; % unit m
-        % depth camera in body frame whichStep is assumed to be the imu frame,
-        
+        deltaPhi=[0;0;0]; 
+        options.Cimu2cam=rotqr2ro(rvec2quat_v000(deltaPhi))*[0, 1, 0; 0, 0, 1; 1, 0, 0];
+        options.Tcam2body=[0; 0; 0]; % unit m
         sigmaEuler=[1; 1; 1]*pi/180; % unit rad
         sigmaTrans=[2;2;2]*1e-3; % unit m
      
@@ -278,7 +277,7 @@ switch experim
         useGPSstd=false; % use the std in the rtklib GPS solutons
         options.RTKlib_mtpl=5; % multiplier for RTKlib obtained std/cov
         options.RTKlib_sol_std=[0.05,0.05,0.15;1.0,1.0,2.0;15,15,15]; % position std definition depending on the RTKLib solution (1, 2, 5)
-        options.Tant2body=[0.454; 0.746; -1.344];
+        options.Tant2body=[-0.746; 0.454; -1.344];
         % gps start and end time
         gpsSE=options.startTime+[100, 200; 250, 400; 450, 600; 650, 800; 950, 2000];        
         gpspostype=4;           % will be automatically determined
@@ -308,8 +307,8 @@ switch experim
         camFile=options.imufile; % dummy here, where the camera measurements come from
         options.camPoseFile=[resdir, 'kinectPose.txt']; % output camera position and attitude
         deltaPhi=[0;0;0]; % [-0.487; 1.106; -0.518]/180*pi;
-        options.Cimu2cam=rotqr2ro(rvec2quat_v000(deltaPhi))*[0,0,1;-1,0,0;0,-1,0]'; % (Rc2s)'
-        options.Tcam2body=[3; -6.2; -4.05]*1e-2; % unit m
+        options.Cimu2cam=rotqr2ro(rvec2quat_v000(deltaPhi))*[-1, 0, 0; 0, 0, 1; 0, 1, 0];
+        options.Tcam2body=[0; 0; 0]; % unit m, dummy values
         sigmaEuler=[1; 1; 1]*pi/180; % unit rad
         sigmaTrans=[2;2;2]*1e-3; % unit m
    case 5
@@ -353,7 +352,7 @@ switch experim
         useGPSstd=true; % use the std in the rtklib GPS solutons
         options.RTKlib_mtpl=5; % multiplier for RTKlib obtained std/cov
         options.RTKlib_sol_std=[0.05,0.05,0.15;1.0,1.0,2.0;15,15,15]; % position std definition depending on the RTKLib solution (1, 2, 5)
-        options.Tant2body=[0.454; 0.746; -1.344]; % antenna position in the FDR body frame
+        options.Tant2body=[-0.746; 0.454; -1.344]; % antenna position in the FRD body frame
         % gps start and end time
         gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
       
@@ -411,7 +410,7 @@ switch experim
         useGPSstd=true; % use the std in the rtklib GPS solutons
         options.RTKlib_mtpl=5; % multiplier for RTKlib obtained std/cov
         options.RTKlib_sol_std=[0.05,0.05,0.15;1.0,1.0,2.0;15,15,15]; % position std definition depending on the RTKLib solution (1, 2, 5)
-        options.Tant2body=[0.454; 0.746; -1.344]; % antenna position in the FDR body frame
+        options.Tant2body=[-0.746; 0.454; -1.344]; % antenna position in the FRD body frame
         % gps start and end time
         gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
       

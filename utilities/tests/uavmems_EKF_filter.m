@@ -302,7 +302,7 @@ switch experim
         options.imuErrors=zeros(6,1);
         
         options.Vn=[0;0;0]; % velocity in n-frame at start
-        options.Cb2imu=[1 0  0;  0 -1 0; 0 0 -1]; % from vehicle body frame FDR to sensor frame
+        options.Cb2imu=[1 0  0;  0 -1 0; 0 0 -1]; % from vehicle body frame FRD to sensor frame
         Cimu2n=[1 , 0, 0; 0, -1,0; 0, 0, -1];
         options.qb2n= dcm2quat_v000(Cimu2n*options.Cb2imu);
 
