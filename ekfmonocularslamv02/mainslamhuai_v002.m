@@ -67,7 +67,7 @@ switch experim
         % the input options
         % IMU options
         options.startTime=415500.00; 
-        % 415275 start moving,  415527.04s having camera measurements
+        % 415275 start moving, camera measurements arrive since 415527.04
         options.endTime=415860.00; % 5 min after GPS outage
         options.imuErrorModel=3; % how bias and scale factor is modeled
         options.mechanization=2; % 1 for wander azimuth

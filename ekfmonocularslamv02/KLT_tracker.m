@@ -40,8 +40,8 @@ classdef KLT_tracker < handle
             tracker.fileHandle=fopen(filename,'W'); % feature table
             tracker.videoName=sequencePath;
             tracker.seqType=imgseqtype;
-            tracker.myVid= VideoReader(sequencePath);
-            numFrames= tracker.myVid.NumberOfFrames;
+            tracker.myVid=VideoReader(sequencePath);
+            numFrames=ceil(tracker.myVid.FrameRate*tracker.myVid.Duration);
             tracker.downScale=downScale;
             tracker.excluded_band=tracker.half_patch_size_when_initialized+1; % the border area that is allowed to have a feature point
         end
