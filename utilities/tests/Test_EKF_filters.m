@@ -12,6 +12,9 @@ if(nargin==0)
 workspace_dir = '.';
 datadir = '.\data\20130808\';
 resdir = '.\data\20130808\temp\';
+if exist(resdir, 'dir') ~= 7
+     mkdir(resdir);
+end
 end
 
 addpath([workspace_dir '\instk']); % imu functions
