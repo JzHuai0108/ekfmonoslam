@@ -9,8 +9,9 @@ clear variables;
 clc; close all; 
 
 if(nargin==0)
-workspace_dir= 'C:\JianzhuHuai\GPS_IMU\programs\matlab_ws';
-resdir='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\temp\';
+workspace_dir = '.';
+datadir = '.\data\20130808\';
+resdir = '.\data\20130808\temp\';
 end
 
 addpath([workspace_dir '\instk']); % imu functions
@@ -24,7 +25,7 @@ fprintf('\n test EKF filtering in integrating data of mems IMU and GPS!\n\n');
 rng('default');
 chi2_3= chi2inv(0.9999,3)*50; % threshold to cull outliers
 
-experim=6;
+experim=1;
 
 switch experim
     case 1
@@ -38,12 +39,11 @@ switch experim
         % RS2C float
         % in this case body frame is the IMU frame, forward right down(FRD) wrt the van
         isOutNED=true;
-     
         filresfile=[resdir, 'filresult.bin']; % navigation states
         imuresfile=[resdir, 'imuresult.bin']; % imu error terms        
         % imu options
         options.startTime=415000.0;
-        options.endTime=415500.0;
+        options.endTime=415600.0;
         options.imuErrorModel=3; % how bias and scale factor is modeled
         options.mechanization=2; % 1 for wander azimuth     
         options.mode=2; % 0 for e formulation, 1 for phi, 2 for psi
@@ -52,7 +52,7 @@ switch experim
         options.maxCovStep=options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
         options.Cb2imu=eye(3);
         options.Timu2body=zeros(3,1); % h764G is the body frame
-        options.imufile=[resdir,'microstrain_20130808imu.txt'];
+        options.imufile=[datadir,'microstrain_20130808imu.txt'];
         
         imuFileType=0; % 3DM GX3 -35
         %Initial PVA of IMU
@@ -71,8 +71,8 @@ switch experim
         options.Tant2body=[-0.746;0.454;-1.344];
         gpsSE=[options.startTime+200, options.startTime+2000]; 
         gpspostype=2;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
-        gpsfile=[resdir,'oem615_20130809.pos'];
-        
+        gpsfile=[datadir,'oem615_20130809.pos'];
+        options.RTKlib_sol_std=[0.05,0.05,0.15;1.0,1.0,2.0;15,15,15]; % position std definition depending on the RTKLib solution (1, 2, 5)
         % ZUPT options
         options.sigmaZUPT = 0.05;% unit m
          % ZUPT start and end Time, determine before the filter
@@ -92,7 +92,7 @@ switch experim
         
         options.useCam=false;
         camFile=options.imufile; % where the camera measurements come from
-        options.camPoseFile=[resdir, 'kinectPose.txt']; % output camera position and attitude
+        options.camPoseFile=[resdir, 'kinectPose.txt']; % dummy output camera position and attitude
         deltaPhi=[0;0;0]; 
         options.Cimu2cam=rotqr2ro(rvec2quat_v000(deltaPhi))*[0, 1, 0; 0, 0, 1; 1, 0, 0];
         options.Tcam2body=[0; 0; 0]; % unit m

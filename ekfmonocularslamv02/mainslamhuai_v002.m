@@ -57,8 +57,8 @@ switch experim
         % Cimu2body has rotation angles less than 1 degree on all 3 axes.
         % output settings
         isOutNED=true;
-        datadir='..\data\';
-        resdir='..\data\temp\';
+        datadir='.\data\20130808\';
+        resdir='.\data\20130808\temp\';
         
         filresfile=[resdir, 'filresult.bin']; % navigation states
         imuresfile=[resdir, 'imuresult.bin']; % imu error terms
