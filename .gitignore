@@ -9,6 +9,4 @@ SE3Interpolation/CMakeLists\.txt\.user
 EKF_monoSLAM_1pRANSAC/sequences/
 EKF_monoSLAM_1pRANSAC/figures/
 
-mexopencv/
-
-
+mexopencv2\.4-vc10-x64/

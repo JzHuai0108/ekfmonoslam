@@ -1,9 +1,8 @@
-% test KLT on casio 2
 addpath('..\mexopencv\');
-addpath('..\ekfmonocularslamv00');
-sequencePath ='..\casio2_3430.MOV';
+addpath('..\utilities');
+sequencePath ='G:\data\20130808\casio2_3430.MOV';
 myVid= VideoReader(sequencePath);
-[img0, resizescale]=takeimagefromvideo(myVid, 12180);
+img0 = takeimagefromvideo(myVid, 12180, 1);
 
 mask=uint8(ones(size(img0,1),size(img0,2)));
 mask(:,:)=1;
@@ -42,7 +41,7 @@ sigma1=10;
 
 imglast=img0(:,:,1);
 for i=12181:13000
-    [im, resizescale]=takeimagefromvideo(myVid, i);
+    im = takeimagefromvideo(myVid, i, 1);
     [prevPts, status, err] = cv.calcOpticalFlowPyrLK(imglast, im, prevPts, 'WinSize', [23, 23], ...
         'MaxLevel', 2,'Criteria', struct('type', 'Count+EPS', 'maxCount', 20, 'epsilon', 0.01));
     corners=zeros(2,size(prevPts,2));

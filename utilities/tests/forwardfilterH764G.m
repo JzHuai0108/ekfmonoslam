@@ -107,11 +107,9 @@ switch caseID
         %         rateNHC=inf; % this generally cause worse results
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2.0;
-        useCam=false;
+        options.useCam=false;
         options.Cimu2cam= R2(pi/2)*R1(pi/2);
         options.Tcam2body=[2.139; -0.102; -0.925]; % casio 2 in body frame
-        
-        
 end
 
 % bias/sigma/data length in memory for automatically-detect ZUPT using acceleration

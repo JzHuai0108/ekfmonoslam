@@ -12,9 +12,9 @@ The EKF of ekfmonoslam is based on that in 1-Point RANSAC Inverse Depth [EKF Mon
 
 Ekfmonoslam used a couple of pinhole camera projection functions from the [camera calibration toolbox package](http://www.vision.caltech.edu/bouguetj/calib_doc/download/toolbox_calib.zip).
 
-## 1.3 MexOpenCV and OpenCV
+## 1.3 mexopencv (included)
 
-Ekfmonoslam used Good feature to track and Lucas-Kanade tracker in OpenCV. MexOpenCV can be forked or downloaded from https://github.com/kyamagu/mexopencv. Compile the mex files according to the instructions on https://github.com/kyamagu/mexopencv.
+Ekfmonoslam used Good feature to track and Lucas-Kanade tracker in [mexopencv](https://github.com/kyamagu/mexopencv/). Mex files built from either mexopencv v3.4.1 or v2.4 have been shown to support ekfmonoslam. For convenience, necessary compiled mex files are included for [mexopencv v2.4](https://github.com/kyamagu/mexopencv/tree/v2.4) built in maplab 2012b on Windows 7 with OpenCV 2.4.6 x64 vc10 release libs. These mex files worked normally under maplab 2012b and 2018b. If mexopencv is to be built anew, please refer to the instuctions [here](https://github.com/kyamagu/mexopencv/).
 
 ## 1.4 INS toolkit (included)
 
@@ -27,7 +27,7 @@ Mike Brooke's [VoiceBox](http://www.ee.ic.ac.uk/hp/staff/dmb/voicebox/voicebox.h
 
 # 2. Build
 
-Download the ekfmonoslam package, and put the compiled mexopencv into its folder like ekfmonoslam/mexopencv.
+Download the ekfmonoslam package.
 
 # 3. Test with data
 

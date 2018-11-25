@@ -96,7 +96,7 @@ switch experim
         rateGravNorm=inf; %rateZUPT;
         sigmaGravMag=3e-3; % unit m/s^2
         
-        useCam=false;
+        options.useCam=false;
         camFile=options.imufile; % where the camera measurements come from
         options.camPoseFile=[resdir, 'kinectPose.txt']; % output camera position and attitude
         deltaPhi=[0;0;0]; % [-0.487; 1.106; -0.518]/180*pi;
@@ -122,7 +122,7 @@ preimutime=lastimu(1,end);
 imuctr=1;   % to count how many IMU data after the latest GPS observations
 
 %load the camera measurements with timestamp
-if(useCam)
+if(options.useCam)
     camdata=load_KinectDataset(camFile, options.startTime);
     euc2c0imu=zeros(size(camdata,1),4);
     euc2c0imu(:,1)=camdata(:,1);

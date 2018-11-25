@@ -1,19 +1,8 @@
-%img=imread('E:/JianzhuHuai/intro to photogrammetry/FastBilateralFilter/images/barbara.jpg');
-%img=imread('chessboard.jpg');
-%img=imread('lena.jpg');
-%img=imread('meadow.jpg');
-addpath('H:\relaylatest\mexopencv\');
-dir='H:\109ND800_080813\';
-fn='DSC_1023.jpg';
-prefix='H:\109ND800_080813\DSC_';
-% fn='flower';
-file=sprintf('%s%s',dir,fn);
+addpath('..\mexopencv\');
+dir='G:\data\20130808\109ND800_080813\';
+prefix=sprintf('%sDSC_', dir);
 
-img0=imread(file);
-%img=img(51:850,51:950,:);%850, 950
-img0 = impyramid(img0, 'reduce');
-img0 = impyramid(img0, 'reduce');
-img0 = impyramid(img0, 'reduce');
+img0 = takeImage_v002(prefix, 1023, 'jpg', 3);
 mask=uint8(ones(size(img0,1),size(img0,2)));
 mask(:,:)=1;
 excluded_band=100;
@@ -22,9 +11,9 @@ mask(end-excluded_band+1:end,:)=0;
 mask(:,1:excluded_band)=0;
 mask(:,end-excluded_band+1:end)=0;
 
- prevPts = cv.goodFeaturesToTrack(rgb2gray(img0),'MaxCorners', 200, ...
+ prevPts = cv.goodFeaturesToTrack(img0,'MaxCorners', 200, ...
  'QualityLevel', 0.02,'MinDistance', 10,'Mask', mask, 'BlockSize', 3, 'UseHarrisDetector', 0, 'K',0.04);
-prevPts=cv.cornerSubPix(rgb2gray(img0), prevPts);
+prevPts=cv.cornerSubPix(img0, prevPts);
 
 % the argument order and vacancy does not matter in matlab in constrast to
 % opencv C++
@@ -51,7 +40,7 @@ sigma1=10;
 
 imglast=img0(:,:,1);
 for i=1024:1055
-    im=takeImage_v001(prefix,i, 'jpg');
+    im=takeImage_v002(prefix,i, 'jpg', 3);
             maxedge=max(size(im));
                 while(maxedge>1000)
                     im=impyramid(im, 'reduce');% 8UC1
@@ -87,5 +76,3 @@ for i=1024:1055
 end
 
 % close(writerObj);
-
-% implay(sprintf('%s%sGrayKLT9.avi',dir,fn),30);

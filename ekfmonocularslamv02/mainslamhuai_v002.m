@@ -34,9 +34,10 @@ addpath('..\instk'); % imu functions
 addpath('..\utilities'); % imu functions
 addpath('..\toolbox_calib');% to use project_point2.m and normalize.m
 addpath('..\mexopencv\');% cvcalcopticflowpyrlk and cvgoodfeaturestotrack
-addpath('..\voicebox\'); % for rotro2qr and rotqr2eu, they are more robuts
-addpath('..\EKF_monoSLAM_1pRANSAC\matlab_code\'); % ekf slam camera functions of civera
+addpath('..\voicebox\'); % for rotro2qr and rotqr2eu, they are more robust
 % than dcm2quat_v000 and dcm2euler_v000
+addpath('..\EKF_monoSLAM_1pRANSAC\matlab_code\'); % ekf slam camera functions of civera
+
 import java.util.LinkedList
 clear variables;
 clc; close all; format longg;
@@ -116,7 +117,7 @@ switch experim
         options.minNHCVel=2.0;
         
         % Camera options
-        useCam=true;
+        options.useCam=true;
         options.camtype=1;                  % 2 Nikon D800, 1 for casio 2
         options.Cimu2cam= R2(pi/2)*R1(pi/2);
         % R1(pi/2)*R3(pi/2);% the mems frame to the camera frame
@@ -192,7 +193,7 @@ switch experim
         %         rateNHC=inf; % this generally cause worse results
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2;
-        useCam=false;
+        options.useCam=false;
         options.Cimu2cam= R2(pi/2)*R1(pi/2);
         options.Tcam2body=[2.139; -0.102; -0.925]; % casio 2 in body frame
     case 3
@@ -249,7 +250,7 @@ switch experim
         %         rateNHC=inf; % this generally cause worse results
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2.0;
-        useCam=false;
+        options.useCam=false;
         options.Cimu2cam= R2(pi/2)*R1(pi/2);
         options.Tcam2body=[2.139; -0.102; -0.925]; % casio 2 in body frame
         
@@ -312,12 +313,17 @@ switch experim
         %         rateNHC=inf; % this generally cause worse results
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2.0;
-        useCam=false;
+        options.useCam=false;
         options.Cimu2cam= R2(pi/2)*R1(pi/2);
         options.Tcam2body=[2.139; -0.102; -0.925]; % casio 2 in body frame
     otherwise
         error('Unsupported testing case!');
 end
+
+if exist(resdir, 'dir') ~= 7
+     mkdir(resdir);
+end
+
 Counter.numimurecords=40; % the number of data put in preimudata
 Counter.numcamconfigrecords=300; % number of camera configuration records in camconfighistory
 % Initialize the model state and covariance of state, process noise and
@@ -343,7 +349,7 @@ end
 gpsctr=1;       % the number of GPS data that has been used
 
 %load the camera frame timestamp data
-if(useCam)
+if(options.useCam)
     % Set plot windows
     set_plots;
     % output video

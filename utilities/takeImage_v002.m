@@ -19,21 +19,29 @@
 %           J. M. M. Montiel -- josemari@unizar.es
 
 % Robotics, Perception and Real Time Group
-% Aragón Institute of Engineering Research (I3A)
-% Universidad de Zaragoza, 50018, Zaragoza, Spain
+% Aragï¿½n Institute of Engineering Research (I3A)% Universidad de Zaragoza, 50018, Zaragoza, Spain
 % Date   :  May 2010
 %-----------------------------------------------------------------------
 
-function im=takeImage(image_file_name_prefix,k, image_file_name_suffix)
-if(nargin==3)
+% if downscale is provided, each edge of im is 1/1<<downscale of that of
+% the original image
+function im=takeImage(image_file_name_prefix,k, image_file_name_suffix, downscale)
+if nargin > 2
     imRGB=imread(sprintf('%s%04d.%s',image_file_name_prefix,k,image_file_name_suffix));
-else 
+else
     imRGB=imread(sprintf('%s%04d.pgm',image_file_name_prefix,k));
 end
-im=imRGB;
-% im=imRGB(:,:,1);
-% maxedge=max(size(im));
-% while(maxedge>1000)
-%     im=impyramid(im, 'reduce');
-%     maxedge=round(maxedge/2);
-% end
+
+if size(imRGB, 3) == 3
+    im = rgb2gray(imRGB);
+else
+    im = imRGB(:, :, 1);
+end
+
+if nargin == 4
+    downorder = 0;
+    while downorder < downscale
+        im = impyramid(im, 'reduce');
+        downorder = downorder + 1;
+    end
+end
