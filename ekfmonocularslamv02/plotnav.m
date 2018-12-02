@@ -8,7 +8,7 @@ end
 if(useGPS)
 inillh_ant2=options.inillh_ant;
 
-posdata=loadAllGPSData(gpsfile, [kf(1,1), kf(end,1)], gpspostype);
+posdata=loadAllGPSData(gpsfile, [kf(1,1), kf(end,1)]);
 maxl=size(posdata,1);
 if(isOutNED)
     for i=1:maxl

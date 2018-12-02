@@ -73,7 +73,7 @@ switch experim
 %         Tant2imu=[4;5;99]*1e-3; % from Greg's drawing, the position of antenna in epson frame
         % gps start and end time
         gpsSE=[options.startTime, options.startTime+2000];
-        gpspostype=3;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile='F:\oct082014velodyne\Velodyne.pos';
         isConstantVel=false; % use constant velocity model
         options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
@@ -150,7 +150,7 @@ switch experim
 %         Tant2imu=[4;5;99]*1e-3; % from Greg's drawing, the position of antenna in epson frame
         % gps start and end time
         gpsSE=[options.startTime, options.startTime+2000];
-        gpspostype=3;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile='G:\3_Nikon\GPS_OEM615-Nikon\Processed_respect_Van_base_station\Nikon.pos';
 %         'F:\oct082014velodyne\Velodyne.pos';
         isConstantVel=false; % use constant velocity model
@@ -236,7 +236,7 @@ switch experim
         Tant2imu=[4;5;99]*1e-3; % from Greg's drawing, the position of antenna in epson frame
         % gps start and end time
         gpsSE=[options.startTime, options.startTime+2000];
-        gpspostype=3;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
 %         gpsfile='F:\oct082014velodyne\Velodyne.pos';
         gpsfile='F:\3_Nikon\GPS_OEM615-Nikon\Processed_respect_Van_base_station\Nikon.pos';
         
@@ -315,7 +315,7 @@ switch experim
         Tant2imu=[0.454; -0.746; 1.344];
         % gps start and end time
         gpsSE=options.startTime+[100, 200; 250, 400; 450, 600; 650, 800; 950, 2000];
-        gpspostype=4;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile='C:\JianzhuHuai\GPS_IMU\programs\matlab_ws\data\Novatel_rover_KIN_20151111.pos';
         
         isConstantVel=false; % use constant velocity model
@@ -381,7 +381,7 @@ switch experim
         Tant2imu=[0.454; -0.746; 1.344];
         % gps start and end time
         gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
-        gpspostype=4;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile='C:\JianzhuHuai\GPS_IMU\programs\matlab_ws\data\Novatel_rover_KIN_20151111.pos';
         
         isConstantVel=false; % use constant velocity model
@@ -449,7 +449,7 @@ switch experim
         Tant2imu=[0.454; -0.746; 1.344];
         % gps start and end time
         gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
-        gpspostype=4;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile='C:\JianzhuHuai\GPS_IMU\programs\matlab_ws\data\Novatel_rover_KIN_20151111.pos';
         
         isConstantVel=false; % use constant velocity model
@@ -496,7 +496,7 @@ preimutime=lastimu(1,end);
 imuctr=1;   % to count how many IMU data after the latest GPS observations
 % read the GPS data and align the GPS data with the imu data
 if(useGPS)
-    [fgps, gpsdata]=readgpsheader(gpsfile, gpsSE(1,1), gpspostype);
+    [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, gpsSE(1,1));
 else gpsdata=inf;
 end
 % Start the main INS
@@ -681,7 +681,7 @@ fclose all;
 kf = readdata(filresfile, 1+18);
 
 % Extracting GPS data
-posdata=loadAllGPSData(gpsfile, [options.startTime, options.endTime], gpspostype); % reads specified columns
+posdata=loadAllGPSData(gpsfile, [options.startTime, options.endTime]); % reads specified columns
 % in given example these columns refer to: TOW, X, Y, Z, sol type, mX, mY, Mz
 inillh_ant=ecef2geo_v000(inixyz_ant,0);
 Ce2n0=llh2dcm_v000(inillh_ant(1:2),[0;1]);

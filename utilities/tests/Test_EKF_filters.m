@@ -73,7 +73,7 @@ switch experim
         useGPSstd=false; % use the std in the rtklib GPS solutons
         options.Tant2body=[-0.746;0.454;-1.344];
         gpsSE=[options.startTime+200, options.startTime+2000]; 
-        gpspostype=2;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile=[datadir,'oem615_20130809.pos'];
         options.RTKlib_sol_std=[0.05,0.05,0.15;1.0,1.0,2.0;15,15,15]; % position std definition depending on the RTKLib solution (1, 2, 5)
         % ZUPT options
@@ -143,7 +143,7 @@ switch experim
         options.Tant2body=[8;0;118]*1e-3;
         % gps start and end time
         gpsSE=[options.startTime, options.startTime+2000];        
-        gpspostype=3;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\GPSnavigation.pos';
         
         % ZUPT options
@@ -209,7 +209,7 @@ switch experim
         options.Tant2body=[ -0.746+1.92; 0.454; -1.344-0.5];
         % gps start and end time
         gpsSE=[options.startTime+700, options.startTime+2000];        
-        gpspostype=3;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile='F:\OEM615-van-front.pos';
         
         % ZUPT options
@@ -283,7 +283,7 @@ switch experim
         options.Tant2body=[-0.746; 0.454; -1.344];
         % gps start and end time
         gpsSE=options.startTime+[100, 200; 250, 400; 450, 600; 650, 800; 950, 2000];        
-        gpspostype=4;           % will be automatically determined
+        
         gpsfile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\GPS_rover_solution_best\Rear_antenna.pos';  
         
         % ZUPT options
@@ -359,7 +359,7 @@ switch experim
         % gps start and end time
         gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
       
-        gpspostype=-1;           % will be automatically determined
+        
         gpsfile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\GPS_rover_solution_best\Rear_antenna.pos';        
         
         % ZUPT options
@@ -417,7 +417,7 @@ switch experim
         % gps start and end time
         gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
       
-        gpspostype=-1;           % will be automatically determined
+        
         gpsfile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\GPS_rover_solution_best\Rear_antenna.pos';        
         
         % ZUPT options
@@ -453,8 +453,9 @@ preimutime=lastimu(1,end);
 imuctr=1;   % to count how many IMU data after the latest GPS observations
 % read the GPS data and align the GPS data with the imu data
 if(useGPS)
-    [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, gpsSE(1,1), gpspostype);
-else gpsdata=inf;
+    [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, gpsSE(1,1));
+else
+    gpsdata=inf;
 end
 %load the camera measurements with timestamp
 if(options.useCam)

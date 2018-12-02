@@ -1,4 +1,4 @@
-function gpsdata_all=loadAllGPSData(gpsfile, gpsSE, gpspostype)
+function gpsdata_all=loadAllGPSData(gpsfile, gpsSE)
 % load rtklib output of gps solutions, input gpsfile name, gps start and
 % end time of gps TOW, gpspostype are as described in readgpsheader
 % output: Nx9 gps entries in the session gpsSE, each entry is 
@@ -6,7 +6,7 @@ function gpsdata_all=loadAllGPSData(gpsfile, gpsSE, gpspostype)
 
 gpsdata_all=zeros( ceil((gpsSE(2)- gpsSE(1)+100)*5), 12);
 num_entries=0;
-[fgps, gpsdata]=readgpsheader(gpsfile, gpsSE(1)-0.2, gpspostype);
+[fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, gpsSE(1)-0.2);
 num_entries=num_entries+1;
 gpsdata_all(num_entries, :) = gpsdata';
 while(1)

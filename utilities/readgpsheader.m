@@ -1,4 +1,4 @@
-function [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, preimutime, gpspostype)
+function [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, preimutime)
 % return the first gpsdata as a column vector that has a timestamp
 % greater than preimutime, and fgps the file Pointer to the gpsfile
 % gpspostype variable determines the type of the RTKlib file:

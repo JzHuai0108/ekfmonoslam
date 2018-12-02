@@ -93,24 +93,24 @@ switch experim
         options.Ve=llh2dcm_v000(options.inillh_ant,[0;1])'*options.Vn; 
         %         options.qb2n=att2qua([0.007965088	-0.003631592 5.39978]/180*pi);% H764G INS data, 414840
         options.qb2n=att2qua([0.752710886563209; 1.11608842515955; -84.8149334249363]/180*pi);% Roll pitch, AZ, H764G+GPS reference at 415500
-        options.InvalidateIMUerrors=true;
-        options.initAttVar=3*pi/180; % 5 deg std for roll and pitch, 2 times 5 deg for yaw std       
+        options.InvalidateIMUerrors=false;
+        options.initAttVar=5*pi/180; % 5 deg std for roll and pitch, 2 times 5 deg for yaw std       
         
         % GPS options
         useGPS=true;
         useGPSstd=false; % use the std in the rtklib GPS solutons
         options.Tant2body=[-0.746;0.454;-1.344];
         options.gpsnum=100*5;   % 5Hz x s, the interval of GPS coverage
-        gpspostype=2;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile=[datadir,'oem615_20130809.pos'];
      
         % ZUPT options
-        options.zuptSE=[414840, 415275-100];% zupt start and end time
-        options.sigmaZUPT = 0.1;% unit m/s
+        options.zuptSE=[414840, 415200];% zupt start and end time
+        options.sigmaZUPT = 0.05;% unit m/s
         rateZUPT=round(sqrt(1/options.dt));
         
         % NHC options
-        options.sigmaNHC = 0.3;% unit m/s
+        options.sigmaNHC = 0.1;% unit m/s
         rateNHC=round(sqrt(1/options.dt));
 %         rateNHC=inf; % this generally cause worse results
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
@@ -172,7 +172,7 @@ switch experim
         useGPSstd=true; % use the std in the rtklib GPS solutons
         options.Tant2body=[ -0.746; 0.454; -1.344]; %level arm offset of gps antenna in the body and H764G frame
         options.gpsnum=10*5;   % 5Hz x s, the interval of GPS coverage
-        gpspostype=1;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile=[resdir,'rtkout\oem615_20130719.pos'];
     
         % ZUPT start and end Time, determine before the filter
@@ -232,7 +232,7 @@ switch experim
         useGPSstd=true; % use the std in the rtklib GPS solutons
         options.Tant2body=[ -0.746; 0.454; -1.344]; %level arm offset of gps antenna in the body and H764G frame
         options.gpsnum=40*5;   % 5Hz x s, the interval of GPS coverage
-        gpspostype=2;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile=[resdir,'oem615_20130809.pos'];
     
         % ZUPT start and end Time, determine before the filter
@@ -295,7 +295,7 @@ switch experim
         useGPSstd=true; % use the std in the rtklib GPS solutons
         options.Tant2body=[ -0.746; 0.454; -1.344]; %level arm offset of gps antenna in the body and H764G frame
         options.gpsnum=4000*5;   % 5Hz x s, the interval of GPS coverage
-        gpspostype=2;           % 1 for calender time 2 for GPSTOW format, both produced by RTKlib
+        
         gpsfile=[resdir,'oem615_20130809.pos'];
     
         % ZUPT start and end Time, determine before the filter
@@ -343,7 +343,7 @@ preimutime=lastimu(1,end);
 imuctr=1;   % to count how many IMU data after the latest GPS observations
 % read the GPS data and align the GPS data with the imu data
 if(useGPS)
-    [fgps, gpsdata]=readgpsheader(gpsfile, preimutime, gpspostype);
+    [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, preimutime);
 else gpsdata=inf;
 end
 gpsctr=1;       % the number of GPS data that has been used
@@ -463,13 +463,13 @@ while (~feof(fimu)&&curimutime<options.endTime)
     %Apply the  GPS observations
     if (curimutime>gpsdata(1))
         imuctr=0; % to count how many imu epochs after the recent gps observations
-        measure=ecef2geo_v000([gpsdata(2)/180*pi;gpsdata(3)/180*pi;gpsdata(4)],1);        
+        measure=gpsdata(2:4);        
         if(strcmp(filter.tag, 'EKF_IMU_GPS_EFRM'))
             lever=quatrot_v000(filter.rvqs2e(7:10),filter.Tant2imu,0);
             predict=filter.rvqs2e(1:3)+lever;
             H=[eye(3) zeros(3) skew(lever) zeros(3,size(filter.p_k_k,1)-9)];
         elseif(strcmp(filter.tag, 'EKF_IMU_GPS_NFRM'))
-            gpsecef=ecef2geo_v000([gpsdata(2)/180*pi;gpsdata(3)/180*pi;gpsdata(4)],1);
+            gpsecef=gpsdata(2:4);
             Ce2n=filter.Cen;
             heights2n=filter.height;
             measure=Ce2n*gpsecef;            
