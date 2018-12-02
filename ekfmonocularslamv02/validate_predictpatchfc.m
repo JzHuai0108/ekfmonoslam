@@ -1,5 +1,5 @@
 function validate_predictpatchfc()
-addpath('H:\relaylatest\instkhuai11112013'); % imu functions
+addpath('H:\relaylatest\instk'); % imu functions
 addpath('H:\relaylatest\voicebox\'); % for rotro2qr and rotqr2eu, they are more 
 addpath('H:\relaylatest\toolbox_calib');% to use project_point2.m and normalize.m
 patch=imread('H:\relaylatest\validatepatchfc.bmp');

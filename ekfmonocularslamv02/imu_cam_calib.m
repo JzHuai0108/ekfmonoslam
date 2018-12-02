@@ -13,7 +13,7 @@
 % calibration terms of camera and IMU
 
 function imu_cam_calib()
-addpath('..\instkhuai11112013'); % imu functions
+addpath('..\instk'); % imu functions
 addpath('..\voicebox\'); % for rotro2qr and rotqr2eu, they are more robuts
 % than dcm2quat_v000 and dcm2euler_v000
 import java.util.LinkedList

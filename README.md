@@ -34,7 +34,7 @@ Download the ekfmonoslam package.
 A test data, "20130808", can be retrieved from [here](https://pan.baidu.com/s/1c1IdiQO). Once downloaded, put it to the ekfmonoslam/data folder.
 (1) To test GPS/IMU integration, open the folder ekfmonoslam/utilities in maplab, then run Test_EKF_filters.m under utilities/tests.
 
-(2) To test GPS/IMU/Monocular fusion, in matlab open the folder  ekfmonoslam/ekfmonocularslamv02, then run mainslamhuai_v002.m.
+(2) To test GPS/IMU/Monocular fusion, in matlab open the folder  ekfmonoslam/ekfmonocularslamv02, then run mainslam.m.
 
 # 4. Simulate noisy IMU data given ground truth poses
 

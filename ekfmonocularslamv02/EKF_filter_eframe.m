@@ -23,8 +23,6 @@
 % about quaternion notations
 % Joan Sola, 2015, quaternion kinematics for the error-state KF
 
-% last change: 12/9/2015 Jianzhu Huai
-
 classdef EKF_filter_eframe < handle
     properties (Hidden)
         type = 'ekf';

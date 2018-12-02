@@ -568,7 +568,7 @@ classdef EKF_filter_s0frame < handle
             % mount vectors and matrices for the update
             allocsz=sum([filter.features_info.high_innovation_inlier]);
             if(allocsz==0)
-                fprintf('No points in the states are high inliers!\n');
+%                 fprintf('No points in the states are high inliers!\n');
                 return;
             end
             z=zeros(allocsz*2,1);
