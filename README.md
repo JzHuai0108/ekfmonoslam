@@ -36,6 +36,10 @@ A test data, "20130808", can be retrieved from [here](https://pan.baidu.com/s/1c
 
 (2) To test GPS/IMU/Monocular fusion, in matlab open the folder  ekfmonoslam/ekfmonocularslamv02, then run mainslam.m.
 
+(3) Unscented Kalman filter for GPS/IMU/Monocular camera fusion, 
+refer to utilities/gssm_cam_ins_gps.m and utilities/tests/cam_ins_gps.m. 
+But this was very experimental.
+
 # 4. Simulate noisy IMU data given ground truth poses
 
 Suppose the ground truth SE(3) poses (3D position and 3DOF attitude) are given at a regular interval, e.g. 0.1s, the noisy IMU data at a particular frequency, e.g., 100Hz can be generated in two steps: 1, generate the continuous trajectory by interpolating the existing poses, differentiating the continuous trajectory will give angular rates and linear accelerations, for details, see [1]; 2, add noise to these true IMU samples, given error specs of a particular IMU model.
