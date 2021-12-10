@@ -12,12 +12,12 @@ end
 
 gpsdata_all=zeros( ceil((gpsSE(2)- gpsSE(1)+100)*5), 12);
 num_entries=0;
-[fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, gpsSE(1)-0.2);
+[fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, gpsSE(1));
 num_entries=num_entries+1;
 gpsdata_all(num_entries, :) = gpsdata';
 while(1)
     [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype);
-    if(gpsdata(1)==inf || gpsdata(1)> gpsSE(2)+0.2)
+    if(gpsdata(1)==inf || gpsdata(1)> gpsSE(2))
         break;
     else
         num_entries=num_entries+1;

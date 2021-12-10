@@ -216,7 +216,8 @@ switch experim
         gpsSE=options.startTime+[0, 260];
         
         gpsfile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/Novatel_rover_KIN_20151111.pos';
-        
+        allGpsData=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla'); 
+
         isConstantVel=false; % use constant velocity model
         options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
         
@@ -258,17 +259,17 @@ switch experim
         error(['Unsupported testing case ' num2str(experim) '!']);
 end
 
-filter =EKF_filter_s0frame_bias(options);
+filter = EKF_filter_s0frame_bias(options);
 
 imuIndex = find(allImuData(:, 1) >= options.startTime, 1, 'first');
 preimutime = allImuData(imuIndex - 1, 1);
 imudata = allImuData(imuIndex, :)';
 
-gpsCount=0;
+gpsIndex=1;
 imuCountSinceGnss=1;   % to count how many IMU data after the latest GPS observations
 % read the GPS data and align the GPS data with the imu data
-if(useGPS)
-    [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, gpsSE(1,1), 'lla');
+if useGPS
+    gpsdata = allGpsData(gpsIndex, :)';
 else
     gpsdata=inf;
 end
@@ -356,8 +357,7 @@ while (curimutime<options.endTime)
     
     %% GNSS observations.
     if (curimutime>=gpsdata(1))
-        gpsCount = gpsCount + 1; 
-        if rem(gpsCount, 20) == 0 
+        if rem(gpsIndex, 20) == 0 
             fprintf('Using GNSS data at %.3f.\n', gpsdata(1, 1)); 
         end
         imuCountSinceGnss=0;
@@ -412,9 +412,12 @@ while (curimutime<options.endTime)
         end
         %Read the next gps data that is within the specified sessions
         gpsSErow=find(((gpsSE(:,1)<=gpsdata(1))&(gpsSE(:,2)>=gpsdata(1)))==1,1); % on which row/ session is the last gpsdata
-        lastgpstime =gpsdata(1);             
+        lastgpstime =gpsdata(1);          
         assert(~isempty(gpsSErow));
-        [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype, 'lla');
+
+        gpsIndex = gpsIndex + 1;
+        gpsdata = allGpsData(gpsIndex, :)';
+
         if (gpsdata(1)>gpsSE(gpsSErow,2))
             disp(['GPS outage starts from ' num2str(lastgpstime) ...
                 ' GTOW sec which is ', num2str(lastgpstime - options.startTime), ...
@@ -436,7 +439,9 @@ while (curimutime<options.endTime)
                     gpsdata(1)=inf;% completely stop using GPS
                 else
                     while(gpsdata(1)< gpsSE(nextSErow,1))
-                        [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype);                        
+                        gpsIndex = gpsIndex + 1;
+                        gpsdata = allGpsData(gpsIndex, :)';
+
                         while(gpsdata(1) > gpsSE(nextSErow,2) && nextSErow< size(gpsSE,1))
                             nextSErow= nextSErow+1;                            
                         end
@@ -450,7 +455,7 @@ while (curimutime<options.endTime)
                 disp(['GPS resumes from ' num2str(gpsdata(1)) ...
                       ' GTOW sec which is ', num2str(gpsdata(1) - options.startTime), ...
                       ' since the start!']);
-            end         
+            end
         end
     else
         imuCountSinceGnss=imuCountSinceGnss+1;
