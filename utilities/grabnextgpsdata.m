@@ -1,10 +1,13 @@
-function [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype)
+function [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype, coordinateStyle)
 % output: gpsdata 9x1 GPS TOW, ECEF XYZ, Q and no of satels and sdx sdy sdz
 % sdxy sdyz sdzx
 % the gpspostype variable is determined based on the first line of data 
 % (whether it is GPST or GPS TOW) and last line of the header to determine 
 % the coordinated type (this line contains unique key words ecef or deg)
 % more information about gpspostype in readgpsheader
+if nargin < 3
+    coordinateStyle = 'ecef';
+end
 gpsdata = zeros(12, 1);
 if ~feof(fgps)
     hstream= fgetl(fgps);
@@ -55,4 +58,9 @@ if ~feof(fgps)
     end
 else
     gpsdata(1)=inf;
+end
+if strcmp(coordinateStyle, 'lla') && gpsdata(1) ~= inf
+    gpsdata(2:4) = ecef2lla(gpsdata(2:4)')';
+    gpsdata(2:3) = gpsdata(2:3) * pi / 180;
+end
 end

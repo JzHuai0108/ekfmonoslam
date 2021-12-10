@@ -1,4 +1,4 @@
-function [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, preimutime)
+function [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, preimutime, coordinateStyle)
 % return the first gpsdata as a column vector that has a timestamp
 % greater than preimutime, and fgps the file Pointer to the gpsfile
 % gpspostype variable determines the type of the RTKlib file:
@@ -8,9 +8,15 @@ function [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, preimutime)
 % 4 GPS h/m/s + ECEF XYZ
 % 5 GPST h/m/s, lat lon h (d ' " d ' " m)
 % 6 GPS TOW, lat lon h (d ' " d ' " m)
-% output: gpsdata 9x1 GPS TOW, ECEF XYZ, Q and no of satels, sdx sdy sdz,
-% sdxy, sdyz, sdzx (according the RTKlib scheme; conversion to 3x3 matrix uses covm2RTKlib)
+% coordinateStyle == 'ecef' or 'lla'
 
+% output: gpsdata 12x1 GPS TOW, ECEF XYZ (or lla depending on coordinateStyle), 
+% Q and no of satels, sdx sdy sdz,
+% sdxy, sdyz, sdzx (according the RTKlib scheme; conversion to 3x3 matrix uses covm2RTKlib)
+if nargin < 3
+    coordinateStyle = 'ecef';
+end
+gpsdata=zeros(12, 1);
 fgps=fopen(gpsfile,'rt');
 if fgps~=-1
     %% Discard all observation data before the current time
@@ -48,7 +54,6 @@ if fgps~=-1
     end
     
     %% reading data
-    gpsdata=zeros(12, 1); 
     if(gpspostype==1 || gpspostype==5)
         if (gpspostype==5)% d'"
             stoic=sscanf(hstream,'%d/%d/%d%d:%d:%f%d%d%f%d%d%f%f%d%d%f%f%f%f%f%f');
@@ -154,7 +159,11 @@ if fgps~=-1
     end
 else
     fprintf('Failed to open GNSS file at %s.\n', gpsfile);
-    gpsdata=inf;
+    gpsdata(1)=inf;
+end
+if strcmp(coordinateStyle, 'lla') && gpsdata(1) ~= inf
+    gpsdata(2:4) = ecef2lla(gpsdata(2:4)')';
+    gpsdata(2:3) = gpsdata(2:3) * pi / 180;
 end
 end
 

@@ -1,4 +1,5 @@
-function [fimu, imudata, previousImuData]=readimuheader(imufile, previousImuData, startTime, numPrevImuDataToKeep, imuFileType)
+function [fimu, imudata, previousImuData]=readimuheader(imufile, ...
+    previousImuData, startTime, numPrevImuDataToKeep, imuFileType)
 % input
 % imuFileType
 %   0: plain text 3dm gx3-35 data,
@@ -9,6 +10,8 @@ function [fimu, imudata, previousImuData]=readimuheader(imufile, previousImuData
 %   5: epson csv
 
 % imufile: imu file name
+
+% To load IMU data from the very beginning, set startTime <= 0.
 
 % output:
 % fimu the file pointer after opening the file
