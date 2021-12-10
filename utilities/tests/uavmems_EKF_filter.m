@@ -193,11 +193,12 @@ switch experim
 
         options.imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/20151111_140059_D_timetagged.csv';
         imuFileType=5; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
+        allImuData=loadImuData(options.imufile, imuFileType, [options.startTime - options.dt, options.endTime + 1.0]); 
+
         % the position of antenna at startTime
         inixyz_ant=[592574.6611  -4856604.0417   4078414.4645]';
         options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
-   
-        options.imuErrors=zeros(6,1);        
+
         options.Vn=[0;0;0]; % roughly estimated from GPS
         options.Cb2imu=[1 0  0;  0 1 0; 0 0 1];% vehicle body frame to imu frame
         accel= [0 0 9.81]; % The average accelerometer measurement vector at the beginning.
@@ -241,7 +242,18 @@ switch experim
         % vertical velocity constraints
         rateVel=inf; %round(sqrt(1/options.dt)/2);
         sigmaVertVel=6; % unit m/s
-        sigmaHorizVel=10; 
+        sigmaHorizVel=10;
+
+        % state initialization options. 
+        % Biases computed by averaging leads to slightly worse results
+        % thatn zeros, maybe because the IMU measures the car engine
+        % vibration at the beginning.
+%         staticUntilIndex = find(allImuData(:, 1) < zuptSE(2), 1, 'last' );
+%         gyroBias = mean(allImuData(1:staticUntilIndex, 5:7), 1)';  
+%         accelBias = mean(allImuData(1:staticUntilIndex, 2:4), 1)' + options.Cb2imu * quatrot_v000(options.qb2n, gn0, 1);  
+%         options.imuErrors = [accelBias; gyroBias];
+
+        options.imuErrors=zeros(6,1);
     otherwise
         error(['Unsupported testing case ' num2str(experim) '!']);
 end
