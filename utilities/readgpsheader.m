@@ -12,12 +12,12 @@ function [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, preimutime)
 % sdxy, sdyz, sdzx (according the RTKlib scheme; conversion to 3x3 matrix uses covm2RTKlib)
 
 fgps=fopen(gpsfile,'rt');
-if(fgps~=-1)
-    %%%%%Discard all observation data before the current time
+if fgps~=-1
+    %% Discard all observation data before the current time
     %remove the header of gps posdata
     hstream= fgetl(fgps);
     while(true)
-        if(isempty(strfind(hstream,'%')))
+        if ~contains(hstream,'%')
             break;
         else
             hstream0=hstream; % keeping old line to recognize type
@@ -27,14 +27,14 @@ if(fgps~=-1)
     
     %% Recognizing the type of the RTKlib pos file and owerwite the gpspostype variable
     % checking the time type
-    if(isempty(strfind(hstream,'/')))
+    if ~contains(hstream,'/')
         time_type=1; % GPS TOW
     else
         time_type=0; % GPST
     end
     % checking the data type
-    if (isempty(strfind(hstream0,'ecef')))
-        if (isempty(strfind(hstream0,'deg')))
+    if ~contains(hstream0,'ecef')
+        if ~contains(hstream0,'deg')
             coord_type=5; % d'" for lat and lon
         else
             coord_type=1; % deg for lat and lon
@@ -59,7 +59,7 @@ if(fgps~=-1)
             stoic=sscanf(hstream,'%d/%d/%d%d:%d:%f%f%f%f%d%d%f%f%f%f%f%f');
         end
         %GPST, lattitude longitude in degree and height in meter, Q and no of satels and sdn sde sdu
-        [weeksec, weeknum]=Calender2GPSWeek(stoic(1:6));
+        [weeksec, ~]=Calender2GPSWeek(stoic(1:6));
         mess=stoic;
         
         gpsdata(1)=weeksec+(mess(4:6)-stoic(4:6))'*[3600;60;1];
@@ -148,9 +148,13 @@ if(fgps~=-1)
             mess=sscanf(hstream,'%d/%d/%d%d:%d:%f%f%f%f%d%d%f%f%f%f%f%f');
             gpsdata(1)=weeksec+(mess(4:6)-stoic(4:6))'*[3600;60;1];
             gpsdata(2:12)=mess(7:17);
-        end      
-    end    
-else gpsdata=inf;
+        end
+    else
+        fprintf('GNSS file type %d is unsupported!\n', gpspostype);
+    end
+else
+    fprintf('Failed to open GNSS file at %s.\n', gpsfile);
+    gpsdata=inf;
 end
 end
 

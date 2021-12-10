@@ -37,7 +37,7 @@ classdef EKF_filter_jekeli76 < handle
            filter.xi=filter.xi+(vi1+filter.vi)/2*filter.dt;
            filter.vi=vi1;            
         end
-        function ffun_covariance(filter )
+        function ffun_covariance(filter)
             %propagate the covariance corresponds to states, rs in e, vs in e, q s2e,
             deltat=filter.dt;
             STM=[1, 0, deltat; deltat, 1, .5*deltat^2; 0,0, 1];

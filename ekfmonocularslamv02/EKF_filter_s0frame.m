@@ -193,7 +193,7 @@ classdef EKF_filter_s0frame < handle
                 quatmult_v001(filter.rvqs2e(7:10),filter.rqs02e(4:7),1)];
             
         end
-        function ffun_covariance(filter, imuaccum, covupt_time, curimutime )
+        function ffun_covariance(filter, imuaccum, covupt_time, curimutime)
             %propagate the covariance in the local s0 frame
             % the covariance corresponds to states, rs0 in e, q s02e,
             % rs in s0, v s in s0, q s02s, ba, bg, sa, sg, qs2c, Ts in c,

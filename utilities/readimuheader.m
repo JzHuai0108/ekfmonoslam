@@ -20,7 +20,7 @@ function [fimu, imudata, preimudata]=readimuheader(imufile, preimudata, startTim
 if(nargin<5)
     imuFileType=0;
 end
-switch( imuFileType)
+switch(imuFileType)
     case 0% plain text 3dm gx3-35 data
         % make sure preimudata is transferred correctly, no memory leaking
         fimu=fopen(imufile,'r');
@@ -175,4 +175,7 @@ switch( imuFileType)
         end
         imudata(2:4)=imudata(2:4)*9.80665/1000;
         imudata(5:7)=imudata(5:7)*pi/180;
+    otherwise
+        fprintf('IMU file type %d is unsupported!\n', imuFileType);
+        imudata = [];
 end

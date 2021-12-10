@@ -5,7 +5,8 @@ function [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype)
 % (whether it is GPST or GPS TOW) and last line of the header to determine 
 % the coordinated type (this line contains unique key words ecef or deg)
 % more information about gpspostype in readgpsheader
-if(~feof(fgps))
+gpsdata = zeros(12, 1);
+if ~feof(fgps)
     hstream= fgetl(fgps);
     if (~ischar(hstream))
         gpsdata(1)=inf;
@@ -19,7 +20,7 @@ if(~feof(fgps))
             else
                 mess=sscanf(hstream,'%d/%d/%d%d:%d:%f%f%f%f%d%d%f%f%f%f%f%f');
             end
-            [weeksec, weeknum]=Calender2GPSWeek(mess(1:6));
+            [weeksec, ~]=Calender2GPSWeek(mess(1:6));
             gpsdata=[weeksec; mess(7:17)];
             if(gpspostype==1 || gpspostype==5)
                 %convert degree llh to ecef xyz
@@ -47,8 +48,11 @@ if(~feof(fgps))
                 covm=cov2RTKlib(gpsdata(7:12),1); % covariance matrix from RTKlib notation
                 gpsdata(7:12)=cov2RTKlib(Ce2n'*covm*Ce2n,0); % back to RTKlib notation but transformed
             end
+        else
+            fprintf('GNSS file type %d is unsupported!\n', gpspostype);
+            gpsdata(1) = inf;
         end
-    end    
+    end
 else
     gpsdata(1)=inf;
 end

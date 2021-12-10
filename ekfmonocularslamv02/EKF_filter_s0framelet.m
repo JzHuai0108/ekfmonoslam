@@ -171,7 +171,7 @@ classdef EKF_filter_s0framelet < handle
             end
             filter.rvqs0=strapdown_local_quat(filter.rvqs0, filter.rqs02e, accinc, gyroinc, dt1, gnomegae);
         end
-        function ffun_covariance(filter, imuaccum, covupt_time, curimutime )
+        function ffun_covariance(filter, imuaccum, covupt_time, curimutime)
             % propagate the covariance in the local s0 frame
             % the covariance corresponds to states, 
             % rs in s0, v s in s0, q s0 2s, gravity in s0, ba, bg, sa, sg, qs2c, Ts in c         

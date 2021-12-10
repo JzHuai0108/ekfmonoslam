@@ -156,7 +156,7 @@ classdef EKF_filter_eframe < handle
             [qs2e_new, Ve_new, ecef_new]=strapdown_ecef_quat_v001(filter.rvqs2e(7:10), filter.rvqs2e(4:6), filter.rvqs2e(1:3), accinc, gyroinc, dt1);
             filter.rvqs2e=[ecef_new;Ve_new;qs2e_new];
         end
-        function ffun_covariance(filter, imuaccum, covupt_time, curimutime )
+        function ffun_covariance(filter, imuaccum, covupt_time, curimutime)
             %propagate the covariance corresponds to states, rs in e, vs in e, q s2e,
             % ba, bg, sa, sg
             covdt=curimutime-covupt_time;

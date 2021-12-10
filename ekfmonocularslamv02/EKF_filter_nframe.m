@@ -160,7 +160,7 @@ classdef EKF_filter_nframe < handle
             [filter.qs2n, filter.Vn, filter.Cen, filter.height]=strapdown_Cen_quat_v000(...
                 filter.qs2n, filter.Vn, filter.Cen, filter.height, velinc, angleinc, dt1);     
         end
-        function ffun_covariance(filter, imuaccum, covupt_time, curimutime )
+        function ffun_covariance(filter, imuaccum, covupt_time, curimutime)
             %propagate the covariance corresponds to states, rs in n, vs in n, \psi or \phi,
             % ba, bg, sa, sg
             covdt=curimutime-covupt_time;            

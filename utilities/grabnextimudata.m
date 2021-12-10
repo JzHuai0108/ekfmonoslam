@@ -62,6 +62,10 @@ while(preimutime>=curimutime)
             imudata=imudata([2,[8:10, 5:7]]);
             imudata(2:4)=imudata(2:4)*9.80665/1000;
             imudata(5:7)=imudata(5:7)*pi/180;
+        otherwise
+            fprintf('IMU file type %d is unsupported!\n', imuFileType);
+            imudata = [];
+            return;
     end
     curimutime=imudata(1,end);
 end

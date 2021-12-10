@@ -153,7 +153,7 @@ while (~feof(fimu)&&curimutime<options.endTime)
     %Update the covariance
     if (((curimutime-covupt_time)>=options.maxCovStep) ||(curimutime>=imgepoch))
         %propagate the covariance
-        filter.ffun_covariance(imuaccum, covupt_time, curimutime );
+        filter.ffun_covariance(imuaccum, covupt_time, curimutime);
         covupt_time=curimutime;
         imuaccum=zeros(6,1);
         %Record covariance and navigation solution for the smoother
