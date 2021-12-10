@@ -193,8 +193,8 @@ switch experim
 
         options.imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/20151111_140059_D_timetagged.csv';
         imuFileType=5; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
-        allImuData=loadImuData(options.imufile, imuFileType, [options.startTime - options.dt, options.endTime + 1.0]); 
-
+        allImuData=loadImuData(options.imufile, imuFileType, [options.startTime - options.dt, options.endTime + options.dt]); 
+        assert(min(diff(allImuData(:, 1))) > 1e-4);
         % the position of antenna at startTime
         inixyz_ant=[592574.6611  -4856604.0417   4078414.4645]';
         options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
@@ -227,10 +227,10 @@ switch experim
         rateZUPT=round(sqrt(1/options.dt));
         % NHC options
         options.sigmaNHC = 0.1;% unit m/s
-        rateNHC=inf; % turn off NHC
+        rateNHC = inf; % Turn off NHC since we don't know Cb2imu precisely.
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2.0;
-        
+
         % gravity correction related parameters
         rateGravity=inf;
         gn0= [ 0; 0; 9.804]; % gravity in n frame at start
@@ -257,18 +257,12 @@ switch experim
     otherwise
         error(['Unsupported testing case ' num2str(experim) '!']);
 end
-numPrevImuDataToKeep=40; % the number of data put in preimudata
-% Initialize the model state and covariance of state, process noise and
-% measurment noise
 
 filter =EKF_filter_s0frame_bias(options);
 
-preimudata=LinkedList();% record the previous imu data
-
-% read in imu data
-[fimu, imudata, preimudata]=readimuheader(options.imufile, preimudata, options.startTime, numPrevImuDataToKeep, imuFileType);
-lastimu=preimudata.getLast();
-preimutime=lastimu(1,end);
+imuIndex = find(allImuData(:, 1) >= options.startTime, 1, 'first');
+preimutime = allImuData(imuIndex - 1, 1);
+imudata = allImuData(imuIndex, :)';
 
 gpsCount=0;
 imuCountSinceGnss=1;   % to count how many IMU data after the latest GPS observations
@@ -281,14 +275,14 @@ end
 % Start the main INS
 initime=preimutime;
 imuaccum=zeros(6,1);    % record the accumulated imu measurements
-curimutime=imudata(1,end);
+curimutime=imudata(1);
 covupt_time=preimutime; %the time that we last updated the covariance
 
 fprintf('Estimating trajectory...\n');
 ffilres=fopen(filresfile,'Wb'); % navigation states, 'W' use buffer and binary fwrite()
 fimures=fopen(imuresfile,'Wb'); % imu errors
 
-while (~feof(fimu)&&curimutime<options.endTime)
+while (curimutime<options.endTime)
     %% Write IMU's position and velocity, rpy and accel and gyro bias to the files
     if(isOutNED)
         filter.SaveToFile(options.inillh_ant, preimutime, ffilres);
@@ -301,7 +295,6 @@ while (~feof(fimu)&&curimutime<options.endTime)
     end
     % state propagation
     imuaccum=filter.ffun_state(imuaccum,[imudata(2:7);preimutime;curimutime; gn0; wie2n0], 0, isConstantVel);
-    
     % covariance propagation
     if ((curimutime-covupt_time)>=options.maxCovStep)
         %propagate the covariance
@@ -337,14 +330,14 @@ while (~feof(fimu)&&curimutime<options.endTime)
         filter.correctstates(predict,measure, H,R);
     end
     %% NonHolonomic constraints.
-    isNHC =mod(imuCountSinceGnss, rateNHC)==0;
+    isNHC =mod(imuCountSinceGnss, rateNHC)==1;
     velnorm=filter.GetVelocityMag();
     if (isNHC&&velnorm>options.minNHCVel)
         % non-holonomic constraints
         Cs02s=quat2dcm_v000(filter.rvqs0(7:10));
-        Cs02b=filter.Cb2imu'*Cs02s;
+        Cs02b=options.Cb2imu'*Cs02s;
         predict=Cs02b(2:3,:)*filter.rvqs0(4:6);
-        larry=filter.Cb2imu'*skew(quatrot_v000(filter.rvqs0(7:10),filter.rvqs0(4:6),0));
+        larry=options.Cb2imu'*skew(quatrot_v000(filter.rvqs0(7:10),filter.rvqs0(4:6),0));
         H=sparse([zeros(2,9) Cs02b(2:3,:) larry(2:3,:) zeros(2,size(filter.p_k_k,1)-15)]);
         
         measure=[0;0];
@@ -459,21 +452,13 @@ while (~feof(fimu)&&curimutime<options.endTime)
                       ' since the start!']);
             end         
         end
-    end
-    
-    % Read the next imu data
-    if(preimudata.size()==numPrevImuDataToKeep)
-        preimudata.removeFirst();
-    end
-    preimudata.addLast(imudata(:,end));    % record previous imudata
-    preimutime=curimutime;
-    [fimu, imudata]=grabnextimudata(fimu, preimutime, imuFileType);
-    if (isempty(imudata))
-        break;
     else
-        curimutime=imudata(1,end);
         imuCountSinceGnss=imuCountSinceGnss+1;
     end
+    preimutime=curimutime;
+    imuIndex = imuIndex + 1;
+    imudata = allImuData(imuIndex, :)';
+    curimutime = imudata(1);
 end
 fprintf('Done.\n\n');
 fclose all;
