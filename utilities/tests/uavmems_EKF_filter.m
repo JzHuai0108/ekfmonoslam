@@ -16,6 +16,12 @@
 % (6) the UAV does not fly very far, so we assume fixed n-frame, and it
 % does not fly very long, so earth rotation is ignored
 
+% The experiment on 2014/10/08 collected data with Espon IMU with GPS,
+% Microstrain 3DM-GX3-35 with GPS capability, 
+% velodyne and Nikon cameras which were mounted on an Octorotor. But I
+% have no access to these data at the moment, so the related tests are
+% removed.
+
 function uavmems_EKF_filter()
 workspace_path = '/media/jhuai/docker/ekfmonoslam/';
 addpath([workspace_path 'instk']); % imu functions
@@ -97,253 +103,9 @@ switch experim
         % vertical velocity constraints
         rateVel=inf; %round(sqrt(1/options.dt)/2);
         sigmaVertVel=6; % unit m/s
-        sigmaHorizVel=10; 
-    
+        sigmaHorizVel=10;
+
     case 2
-        % test on Microstrain 3dm gx3-35 data integration with GPS data
-        % collected by octoptor on 2014/10/08 Nikon test       
-        isOutNED=true;
-        resdir='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\temp\';
-        filresfile=[resdir, 'filresult.bin']; % navigation states
-        imuresfile=[resdir, 'imuresult.bin']; % imu error terms
-        % imu options
-        options.startTime= 324310.047; % for Nikon test just after launching which was visually estimated from Nikon images
-%          options.startTime= 320335.7513; % for velodyne test just after launching
-        options.endTime=323946.4722+262.7+294; % for Nikon test excluding landing
-%         320510; % exclude landing for velodyne test
-        options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
-        options.mechanization=2; % 1 for wander azimuth
-        
-        options.imutype=5; % 5 for 3dm gx3 35, 7 for epson m-g362pdc1
-        options.dt=1/100;  %sampling interval
-        options.maxCovStep=options.dt*2.5; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.imufile='G:\3_Nikon\IMU_MicroStrain-Nikon.csv';
-%         'F:\oct082014velodyne\IMU_MicroStrain-Velodyne.csv';
-        
-        imuFileType=4; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
-        inixyz_ant=[579144.429900167         -4851437.31394688          4086499.41041637]'; % for Nikon
-%         [ 579144.6076            -4851437.6245           4086499.4477]';% the position of antenna at startTime for velodyne
-        options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
-        Ce2n0=llh2dcm_v000(options.inillh_ant(1:2),[0;1]);
-        
-        options.imuErrors=zeros(6,1);
-%         options.imuErrors(4:6)=[0.000328736153259098      0.000549543824721639     -0.000343360505567371]'; % for microstrain
-%         options.imuErrors(4:6)=[0.00135256381987421       0.00194848735437637      0.000783913812673864]'; % for epson
-        options.imuErrors(4:6)=[0.000179418067698059       0.00043635486969162     -0.000164707153981932]'; % for microstrain nikon
-%         options.imuErrors(4:6)=[ 6.17841226894643e-05      0.000830677715804075     -0.000116766202634011]'; % for microstrain velodyne
-        options.imuErrors(3)=1.5;
-%         options.imuErrors(4:6)=[  0.0011371102232815       0.00165615518054893      0.000756598052133374]'; % for epson velodyne
-        
-        options.Vn=[0;0;0]; % roughly estimated from GPS
-        options.qb2n=  roteu2qr('xyz',[0;0; 80]/180*pi); % the rotation from imu to w-frame(rotated n-frame)
-%         dcm2quat_v000([0,1,0;1,0,0;0,0,-1]); % from epson frame to microstrain frame
-%         dcm2quat_v000(euler2dcm_v000([0.01072662;	-0.00419594; -0.76]));
-                
-        options.InvalidateIMUerrors=false;
-        options.initAttVar=2*pi/180; % 1 deg std for roll and pitch, 2 times 1 deg for yaw std
-        
-        % GPS options
-        useGPS=true; % if to only use height observation, modify if(1) to if(0) in the following code
-        useGPSstd=true; % use the std in the rtklib GPS solutons
-        % for velodyne microstrain, useGPSstd gives better integration results
-        Tant2imu=[8;0;-118]*1e-3; % from Greg's drawing, the position of antenna in microstrain frame
-%         Tant2imu=[4;5;99]*1e-3; % from Greg's drawing, the position of antenna in epson frame
-        % gps start and end time
-        gpsSE=[options.startTime, options.startTime+2000];
-        
-        gpsfile='G:\3_Nikon\GPS_OEM615-Nikon\Processed_respect_Van_base_station\Nikon.pos';
-%         'F:\oct082014velodyne\Velodyne.pos';
-        isConstantVel=false; % use constant velocity model
-        options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
-        
-        % ZUPT start and end Time, n x 2 matrix, n is the number of segment
-    
-%         zuptSE=[options.startTime, 315341.8429+800; 316365.031277514, 316359.031277514+300]; % for oct08 2014 navigation dataset
-        zuptSE=[options.startTime, 323946.4722+359];%  320541.8429,  320688]; % for oct08 2014 Nikon dataset
-        options.sigmaZUPT = 0.05;% unit m/s
-        rateZUPT=round(sqrt(1/options.dt)); % from tests, we see zupt has adverse effect in this case
-        % NHC options
-        options.sigmaNHC = 0.1;% unit m/s
-        rateNHC=inf; % turn off NHC
-        % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
-        options.minNHCVel=2.0;
-        
-       % gravity correction related parameters
-        rateGravity=3; 
-%         gn0=-[ -0.0626187978334586;        -0.095531558468761;         -9.80835081105972];% estimated from static session, may include accelerometer bias for microstrain
-%         gn0=-[  -0.00757319038128657        0.0516210641328184          9.80663694349179]'; % for epson
-        gn0=-[-0.104112477122421         0.259826191921763          -9.8041828151544]'; % for microstrain nikon test
-%         gn0=-[ -0.180653756542627        0.0836986162201811     -9.80614572647246]'; % for microstrain velodyne test
-        
-        sigmaGravity=2; % unit m/s^2, gravity measurement noise
-        gravityMagCutoff=2; 
-        wie2n0=[0;0;0]; % no earth rotation
-        % vertical velocity constraints
-        rateVel=inf; %round(sqrt(1/options.dt)/2);
-        sigmaVertVel=6; % unit m/s
-        sigmaHorizVel=10; 
-               
-    case 3
-        % test on Epson data integration with GPS data
-        % collected by octoptor on 2014/10/08 velodyne and Nikon test       
-        isOutNED=true;
-        resdir='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\temp\';
-        filresfile=[resdir, 'filresult.bin']; % navigation states
-        imuresfile=[resdir, 'imuresult.bin']; % imu error terms
-        % imu options
-        options.startTime=324310.047; % for Nikon test just after launching
-        options.endTime=323946.4722+262.7+294; % for Nikon test excluding landing
-%         options.startTime=320335.7513; % for velodyne test just after launching
-%         options.endTime=320510; % for velodyne test exclude landing
-        options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
-        options.mechanization=2; % 1 for wander azimuth
-        
-        options.imutype=7; % 5 for 3dm gx3 35, 7 for epson m-g362pdc1
-        options.dt=1/125;  %sampling interval
-        options.maxCovStep=options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-%         options.imufile='F:\oct082014velodyne\IMU_Epson-tagged-Velodyne-20141008_125016.csv';
-        options.imufile='F:\3_Nikon\IMU_Epson-tagged-Nikon-20141008_135928.csv';
-        imuFileType=5; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
-%         inixyz_ant=[ 579144.6076            -4851437.6245           4086499.4477]';% the position of antenna at startTime for velodyne test
-        inixyz_ant=[579144.429900167         -4851437.31394688          4086499.41041637]'; % for Nikon
-        options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
-        Ce2n0=llh2dcm_v000(options.inillh_ant(1:2),[0;1]);
-        
-        options.imuErrors=zeros(6,1);
-%         options.imuErrors(4:6)=[0.000328736153259098
-%         0.000549543824721639     -0.000343360505567371]'; % for
-%         microstrain navigation
-%         options.imuErrors(4:6)=[0.00135256381987421
-%         0.00194848735437637      0.000783913812673864]'; % for epson
-%         navigation
-%         options.imuErrors(4:6)=[ 6.17841226894643e-05      0.000830677715804075     -0.000116766202634011]'; % for microstrain velodyne
-        options.imuErrors(3)=-1.3;
-        options.imuErrors(4:6)=[0.00139318997521938       0.00169263883612614      0.000825222230639221]';% for espon nikon test
-%         options.imuErrors(4:6)=[  0.0011371102232815       0.00165615518054893      0.000756598052133374]'; % for epson velodyne
-        
-        options.Vn=[0;0;0]; % roughly estimated from GPS
-        options.qb2n= rotro2qr(R3(-80*pi/180)*[0,1,0;1,0,0;0,0,-1]); % the rotation from imu to n-frame
-%         dcm2quat_v000([0,1,0;1,0,0;0,0,-1]); % from epson frame to microstrain frame
-%         dcm2quat_v000(euler2dcm_v000([0.01072662;	-0.00419594; -0.76]));
-        
-        options.InvalidateIMUerrors=false;
-        options.initAttVar=2*pi/180; % 1 deg std for roll and pitch, 2 times 1 deg for yaw std
-        
-        % GPS options
-        useGPS=false; 
-        useGPSstd=true; % use the std in the rtklib GPS solutons
-        % for velodyne microstrain, useGPSstd gives better integration results        
-        Tant2imu=[4;5;99]*1e-3; % from Greg's drawing, the position of antenna in epson frame
-        % gps start and end time
-        gpsSE=[options.startTime, options.startTime+2000];
-        
-%         gpsfile='F:\oct082014velodyne\Velodyne.pos';
-        gpsfile='F:\3_Nikon\GPS_OEM615-Nikon\Processed_respect_Van_base_station\Nikon.pos';
-        
-        isConstantVel=false; % use constant velocity model
-        options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
-                
-        % ZUPT options
-        % ZUPT start and end Time, n x 2 matrix, n is the number of segment        
-%         zuptSE=[options.startTime, 315341.8429+800; 316365.031277514, 316359.031277514+300]; % for oct08 2014 navigation dataset
-%         zuptSE=[options.startTime, 320301.8429];%  320541.8429,  320688]; % for oct08 2014 velodyne dataset
-        zuptSE=[options.startTime, 323946.4722+359];%  % for oct08 2014 Nikon dataset
-        options.sigmaZUPT = 0.1;% unit m/s
-        rateZUPT=round(sqrt(1/options.dt)); % from tests, we see zupt has adverse effect in this case
-        % NHC options
-        options.sigmaNHC = 0.1;% unit m/s
-        rateNHC=inf; % turn off NHC
-        % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
-        options.minNHCVel=2.0;
-        
-        % gravity correction related parameters
-        rateGravity=1;
-%         gn0=-[ -0.0626187978334586;        -0.095531558468761;
-%         -9.80835081105972];% estimated from static session, may include
-%         accelerometer bias for microstrain navigation test
-%         gn0=-[  -0.00757319038128657        0.0516210641328184
-%         9.80663694349179]'; % for epson navigation test
-%         gn0=quatrot_v000(options.qb2n, -[0.0590959349840854        -0.227331831539279          9.80786160774546]', 0); % for epson velodyne test, gravity in n0 frame
-        gn0=quatrot_v000(options.qb2n, -[ 0.237649796494726        -0.155077633109062          9.80415364440748]', 0); % for epson Nikon test, gravity in n0 frame
-        sigmaGravity=2; % unit m/s^2, gravity measurement noise
-        gravityMagCutoff=2; 
-        
-        wie2n0=[0;0;0]; % no earth rotation
-        
-        % vertical velocity constraints
-        rateVel=inf; %round(sqrt(1/options.dt)/2);
-        sigmaVertVel=6; % unit m/s
-        sigmaHorizVel=10; 
-        
-    case 4
-        % test on Epson data integration with GPS data
-        % collected by GPS Van on 2015/11/11, session B    
-        isOutNED=true;
-        resdir='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\temp\';
-        filresfile=[resdir, 'filresult.bin']; % navigation states
-        imuresfile=[resdir, 'imuresult.bin']; % imu error terms
-        % imu options
-        options.startTime=321011.2039;
-        options.endTime=322027;
-
-        options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
-        options.mechanization=2; % 1 for wander azimuth
-        
-        options.imutype=7; % 5 for 3dm gx3 35, 7 for epson m-g362pdc1
-        options.dt=1/500;  %sampling interval
-        options.maxCovStep=5*options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-
-        options.imufile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\IMU_Epson\20151111_120956_B_timetagged.csv';
-        imuFileType=5; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
-        % the position of antenna at startTime
-        inixyz_ant=[592574.4116  -4856603.9732   4078414.5768]';
-        options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
-        
-        options.imuErrors=zeros(6,1);
-        
-        options.Vn=[0;0;0]; % velocity in n-frame at start
-        options.Cb2imu=[1 0  0;  0 -1 0; 0 0 -1]; % from vehicle body frame FRD to sensor frame
-        Cimu2n=[1 , 0, 0; 0, -1,0; 0, 0, -1];
-        options.qb2n= dcm2quat_v000(Cimu2n*options.Cb2imu);
-
-        options.InvalidateIMUerrors=false;
-        options.initAttVar=2*pi/180; % 1 deg std for roll and pitch, 2 times 1 deg for yaw std
-        
-        % GPS options
-        useGPS=true; 
-        useGPSstd=true; % use the std in the rtklib GPS solutons
-        Tant2imu=[0.454; -0.746; 1.344];
-        % gps start and end time
-        gpsSE=options.startTime+[100, 200; 250, 400; 450, 600; 650, 800; 950, 2000];
-        
-        gpsfile='C:\JianzhuHuai\GPS_IMU\programs\matlab_ws\data\Novatel_rover_KIN_20151111.pos';
-        
-        isConstantVel=false; % use constant velocity model
-        options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
-                
-        % ZUPT options
-        % ZUPT start and end Time, n x 2 matrix, n is the number of segment        
-        zuptSE=[options.startTime, options.startTime+100];
-        options.sigmaZUPT = 0.1;% unit m/s
-        rateZUPT=round(sqrt(1/options.dt));
-        % NHC options
-        options.sigmaNHC = 0.1;% unit m/s
-        rateNHC=inf; % turn off NHC
-        % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
-        options.minNHCVel=2.0;
-        
-        % gravity correction related parameters
-        rateGravity=10;
-        gn0= [ 0; 0; 9.804]; % gravity in the n-frame at start
-        sigmaGravity=2; % unit m/s^2, gravity measurement noise
-        gravityMagCutoff=2; 
-        
-        wie2n0=[0;0;0]; % earth rotation in n frame at start        
-        % vertical velocity constraints
-        rateVel=inf; %round(sqrt(1/options.dt)/2);
-        sigmaVertVel=6; % unit m/s
-        sigmaHorizVel=10; 
-    case 5
         % test on Epson data integration with GPS data
         % collected by GPS Van on 2015/11/11, session D
         isOutNED=true;
@@ -410,7 +172,7 @@ switch experim
         rateVel=inf; %round(sqrt(1/options.dt)/2);
         sigmaVertVel=6; % unit m/s
         sigmaHorizVel=10; 
-    case 6
+    case 3
         % test on inertial data captured by the Epson IMU mounted on a car.
         % The GPS is kept out in the last 20 seconds to verify that the
         % INS works in a short span.
