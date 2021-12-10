@@ -36,7 +36,7 @@ clc; close all; format longg;
 fprintf('\n EKF of MEMS IMU on UAV!\n\n');
 rng('default');
 
-experim=6;
+experim=3;
 switch experim
     case 1
         % test on Microstrain 3dm gx3-35 data integration with GPS data
@@ -243,7 +243,7 @@ switch experim
         sigmaVertVel=6; % unit m/s
         sigmaHorizVel=10; 
     otherwise
-        error('Unsupported testing case!');
+        error(['Unsupported testing case ' num2str(experim) '!']);
 end
 Counter.numimurecords=40; % the number of data put in preimudata
 % Initialize the model state and covariance of state, process noise and
@@ -257,7 +257,9 @@ preimudata=LinkedList();% record the previous imu data
 [fimu, imudata, preimudata]=readimuheader(options.imufile, preimudata, options.startTime, Counter, imuFileType);
 lastimu=preimudata.getLast();
 preimutime=lastimu(1,end);
-imuctr=1;   % to count how many IMU data after the latest GPS observations
+
+gpsCount=0;
+imuCountSinceGnss=1;   % to count how many IMU data after the latest GPS observations
 % read the GPS data and align the GPS data with the imu data
 if(useGPS)
     [fgps, gpsdata, gpspostype]=readgpsheader(gpsfile, gpsSE(1,1));
@@ -274,7 +276,7 @@ ffilres=fopen(filresfile,'Wb'); % navigation states, 'W' use buffer and binary f
 fimures=fopen(imuresfile,'Wb'); % imu errors
 
 while (~feof(fimu)&&curimutime<options.endTime)
-    %Write IMU's position and velocity, rpy and accel and gyro bias to the files
+    %% Write IMU's position and velocity, rpy and accel and gyro bias to the files
     if(isOutNED)
         filter.SaveToFile(options.inillh_ant, preimutime, ffilres);
     else
@@ -284,10 +286,10 @@ while (~feof(fimu)&&curimutime<options.endTime)
         disp(['Process Time:' num2str(imudata(1))]);
         initime=imudata(1);
     end
-    % time propagation of the IMU
+    % state propagation
     imuaccum=filter.ffun_state(imuaccum,[imudata(2:7);preimutime;curimutime; gn0; wie2n0], 0, isConstantVel);
     
-    %Update the covariance
+    % covariance propagation
     if ((curimutime-covupt_time)>=options.maxCovStep)
         %propagate the covariance
         filter.ffun_covariance(imuaccum, covupt_time, curimutime, isConstantVel);
@@ -301,11 +303,9 @@ while (~feof(fimu)&&curimutime<options.endTime)
             full(sqrt(diag(filter.p_k_k(filter.imuBiasDriftSIP+(0:5),...
             filter.imuBiasDriftSIP+(0:5)))))],'double');
     end
-    %Apply ZUPT. Don't apply zupt for each imu sample. Zupt
-    %for each sample must be performed on nominal trajectory, not with
-    %the Kalman filter.
+    %% ZUPT (zero velocity updates).
     isStatic =~isempty(zuptSE) && ~isempty(find(((zuptSE(:,1)<=curimutime)&(zuptSE(:,2)>=curimutime))==1,1));
-    isZUPT =mod(imuctr, rateZUPT)==0;
+    isZUPT =mod(imuCountSinceGnss, rateZUPT)==0;
     if (isStatic&&isZUPT)
         measure=zeros(3,1);
         predict=filter.rvqs0(4:6);
@@ -313,8 +313,8 @@ while (~feof(fimu)&&curimutime<options.endTime)
         R=eye(3)*options.sigmaZUPT^2;
         filter.correctstates(predict,measure, H,R);
     end
-    % apply gravity norm measurement
-    useGravity =mod(imuctr, rateGravity)==0;
+    %% Gravity norm measurements.
+    useGravity =mod(imuCountSinceGnss, rateGravity)==0;
     if (useGravity&& abs(norm(imudata(2:4))-9.81)< gravityMagCutoff)
         predAccel=imudata(2:4)-filter.imuErrors(1:3);
         predict=-quatrot_v000(filter.rvqs0(7:10),predAccel,1);
@@ -323,7 +323,8 @@ while (~feof(fimu)&&curimutime<options.endTime)
         R=sigmaGravity^2*eye(3);
         filter.correctstates(predict,measure, H,R);
     end
-    isNHC =mod(imuctr, rateNHC)==0;
+    %% NonHolonomic constraints.
+    isNHC =mod(imuCountSinceGnss, rateNHC)==0;
     velnorm=filter.GetVelocityMag();
     if (isNHC&&velnorm>options.minNHCVel)
         % non-holonomic constraints
@@ -337,8 +338,8 @@ while (~feof(fimu)&&curimutime<options.endTime)
         R=eye(2)*options.sigmaNHC^2;
         filter.correctstates(predict,measure, H,R);
     end
-    %%Apply vertical velocity observation
-    useVel =mod(imuctr, rateVel)==0;
+    %% Vertical velocity constraints.
+    useVel =mod(imuCountSinceGnss, rateVel)==0;
     if (useVel)        
         predict=filter.rvqs0(4:6);
         H=[eye(3), zeros(3,filter.covDim-3)];
@@ -347,18 +348,19 @@ while (~feof(fimu)&&curimutime<options.endTime)
         filter.correctstates(predict,measure, H,R, 1);
     end
     
-    %%Apply the  GPS observations
-    
+    %% GNSS observations.
     if (curimutime>=gpsdata(1))
-        imuctr=0; % to count how many imu epochs after the recent gps observations
+        gpsCount = gpsCount + 1; 
+        if rem(gpsCount, 20) == 0 
+            fprintf('Using GNSS data at %.3f.\n', gpsdata(1, 1)); 
+        end
+        imuCountSinceGnss=0;
         gpsecef=gpsdata(2:4);
-        
         measure= quatrot_v000(filter.rqs02e(4:7), gpsecef - inixyz_ant, 1)- quatrot_v000(filter.rvqs0(7:10),Tant2imu,1);
         predict=filter.rvqs0(1:3);
-        %% use three channels
+        % use three channels
         if(1)
             H=sparse([eye(3), zeros(3), zeros(3,size(filter.p_k_k,1)-6)]);
-            
             % the following setting of noise variances is suitable for RTKlib output
             if(~useGPSstd)
                 if(gpsdata(5)==1)
@@ -372,9 +374,8 @@ while (~feof(fimu)&&curimutime<options.endTime)
                 R=4*diag(gpsdata(7:9).^2);
             end
             filter.correctstates(predict,measure, H,R);
-        else %% only use height
+        else % only use height
             H=sparse([0,0,1, zeros(1,size(filter.p_k_k,1)-3)]);
-            
             % the following setting of noise variances is suitable for RTKlib output
             if(~useGPSstd)
                 if(gpsdata(5)==1)
@@ -395,7 +396,9 @@ while (~feof(fimu)&&curimutime<options.endTime)
         assert(~isempty(gpsSErow));        
         [fgps, gpsdata]=grabnextgpsdata(fgps, gpspostype);        
         if (gpsdata(1)>gpsSE(gpsSErow,2))
-            disp(['GPS outage starts from ' num2str(lastgpstime) 'GTOW sec!']);
+            disp(['GPS outage starts from ' num2str(lastgpstime) ...
+                ' GTOW sec which is ', num2str(lastgpstime - options.startTime), ...
+                ' since the start!']);
             % find the next session
             nextSErow=0;
             gpsSErow=find(((gpsSE(:,1)<=gpsdata(1))&(gpsSE(:,2)>=gpsdata(1)))==1,1);
@@ -407,7 +410,9 @@ while (~feof(fimu)&&curimutime<options.endTime)
                     end
                 end
                 if(nextSErow==0)
-                    disp(['GPS completely gone from ' num2str(lastgpstime) 'GTOW sec!']);
+                    disp(['GPS completely gone from ' num2str(lastgpstime) ...
+                          ' GTOW sec which is ', num2str(lastgpstime - options.startTime), ...
+                          ' since the start!']);
                     gpsdata(1)=inf;% completely stop using GPS
                 else
                     while(gpsdata(1)< gpsSE(nextSErow,1))
@@ -416,16 +421,20 @@ while (~feof(fimu)&&curimutime<options.endTime)
                             nextSErow= nextSErow+1;                            
                         end
                     end
-                    disp(['GPS will resume from ' num2str(gpsdata(1)) 'GTOW sec!']);            
+                    disp(['GPS will resume from ' num2str(gpsdata(1)) ...
+                          ' GTOW sec which is ', num2str(gpsdata(1) - options.startTime), ...
+                          ' since the start!']);            
                 end
             else
                 nextSErow = gpsSErow;
-                disp(['GPS resumes from ' num2str(gpsdata(1)) 'GTOW sec!']);
+                disp(['GPS resumes from ' num2str(gpsdata(1)) ...
+                      ' GTOW sec which is ', num2str(gpsdata(1) - options.startTime), ...
+                      ' since the start!']);
             end         
         end
     end
     
-    %Read the next imu data
+    % Read the next imu data
     if(preimudata.size()==Counter.numimurecords)
         preimudata.removeFirst();
     end
@@ -436,12 +445,13 @@ while (~feof(fimu)&&curimutime<options.endTime)
         break;
     else
         curimutime=imudata(1,end);
-        imuctr=imuctr+1;
+        imuCountSinceGnss=imuCountSinceGnss+1;
     end
 end
-fprintf(' done.\n\n');
+fprintf('Done.\n\n');
 fclose all;
-% display the navigation results
+
+%% Plot navigation results
 kf = readdata(filresfile, 1+18);
 
 % Extracting GPS data
@@ -457,30 +467,28 @@ end
 
 nextFig=1;
 f(nextFig) = figure;
-
-plot3(kf(:,1)-kf(1,1),kf(:,3),kf(:,2),'g.')
-hold on 
-plot3(posdata(:,1)-kf(1,1),xs0(:,2),xs0(:,1),'r+')
-grid
-axis equal
-    xlabel('Time [s]')
-    ylabel('East [m]')
-    zlabel('North[m]')
-
-title('green KF trajectory and the red GPS reference for GPS antenna');
-% saveas(f(nextFig),[resdir,'red truth and track'],'fig');
+plot3(kf(:,1)-kf(1,1),kf(:,3),kf(:,2),'g.');
+hold on;
+plot3(posdata(:,1)-kf(1,1),xs0(:,2),xs0(:,1),'r+');
+grid;
+axis equal;
+xlabel('Time [s]');
+ylabel('East [m]');
+zlabel('North[m]');
+legend('Trajectory of the IMU sensor per EKF', 'Trajectory of the antenna per GNSS');
+title('Planar trajectory over time');
 
 nextFig=nextFig+1;
 f(nextFig) = figure;
-plot3(kf(:,2),kf(:,3), kf(:, 4), 'g.')
-hold on 
-plot3(xs0(:,1),xs0(:,2), xs0(:, 3), 'r+')
-grid
-axis equal
-xlabel('North [m]')
-ylabel('East [m]')
-zlabel('Down [m]')
-legend('EKF', 'GNSS');
+plot3(kf(:,2),kf(:,3), kf(:, 4), 'g.');
+hold on;
+plot3(xs0(:,1),xs0(:,2), xs0(:, 3), 'r+');
+grid;
+axis equal;
+xlabel('North [m]');
+ylabel('East [m]');
+zlabel('Down [m]');
+legend('Trajectory of the IMU sensor per EKF', 'Trajectory of the antenna per GNSS');
 title('Trajectory');
 
 nextFig=nextFig+1;

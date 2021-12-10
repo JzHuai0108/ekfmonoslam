@@ -16,7 +16,7 @@ classdef EKF_filter_s0frame_bias < handle
         invalidateIMUerrors; % reset IMU errors when they goes beyond expectation
         imuType; % the type of IMU, e.g., MEMS 3DX GM 3-35, Steval inems, etc.
         imuErrorModel=3; % the IMU error model corresponding to biases
-        dt; % sampling interval, unit sec        
+        dt; % IMU sampling interval, unit sec        
         rqs02e; % position of s0 in the e frame, qs02e, constant
         rvqs0; % position of current s(k) frame in s0 frame, velocity in s0 frame, q s0 to s(k)    
         imuErrors; %ba, bg     
