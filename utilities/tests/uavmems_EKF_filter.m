@@ -363,10 +363,10 @@ while (curimutime<options.endTime)
         imuCountSinceGnss=0;
         % get antenna position in N frame.
         % 1. matlab mapping toolbox approach
-        [east, north, up] = geodetic2enu(gpsdata(2), gpsdata(3), gpsdata(4), ...
+        [north, east, down] = geodetic2ned(gpsdata(2), gpsdata(3), gpsdata(4), ...
             options.inillh_ant(1), options.inillh_ant(2), options.inillh_ant(3), ...
             wgs84Ellipsoid, 'radians');
-        p_N_ant = [north; east; -up];
+        p_N_ant = [north; east; down];
         % 2. our own implementation
 %         gpsecef=lla2ecef([gpsdata(2:3) * 180 / pi; gpsdata(4)]')';
 %         p_N_ant_goodold = quatrot_v000(filter.rqs02e(4:7), gpsecef - inixyz_ant, 1);
@@ -473,10 +473,10 @@ kf = readdata(filresfile, 1+18);
 
 posdata=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla');
 for i=1:size(posdata,1)
-    [east, north, up] = geodetic2enu(posdata(i, 2), posdata(i, 3), posdata(i, 4), ...
+    [north, east, down] = geodetic2ned(posdata(i, 2), posdata(i, 3), posdata(i, 4), ...
             options.inillh_ant(1), options.inillh_ant(2), options.inillh_ant(3), ...
             wgs84Ellipsoid, 'radians');
-    posdata(i, 2:4) = [north, east, -up];
+    posdata(i, 2:4) = [north, east, down];
 end
 
 nextFig=1;
