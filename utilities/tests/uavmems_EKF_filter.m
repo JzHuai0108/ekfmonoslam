@@ -469,22 +469,19 @@ fclose all;
 %% Plot navigation results
 kf = readdata(filresfile, 1+18);
 
-% Extracting GPS data
-posdata=loadAllGPSData(gpsfile, [options.startTime, options.endTime]); % reads specified columns
-% in given example these columns refer to: TOW, X, Y, Z, sol type, mX, mY, Mz
-inillh_ant=ecef2geo_v000(inixyz_ant,0);
-Ce2n0=llh2dcm_v000(inillh_ant(1:2),[0;1]);
-qs02e=rotro2qr(Ce2n0'); % assume body frame is sensor frame
-xs0=zeros(size(posdata,1),3);
+posdata=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla');
 for i=1:size(posdata,1)
-    xs0(i,:)=quatrot_v000(qs02e, posdata(i,2:4)'-inixyz_ant ,1)';
+    [east, north, up] = geodetic2enu(posdata(i, 2), posdata(i, 3), posdata(i, 4), ...
+            options.inillh_ant(1), options.inillh_ant(2), options.inillh_ant(3), ...
+            wgs84Ellipsoid, 'radians');
+    posdata(i, 2:4) = [north, east, -up];
 end
 
 nextFig=1;
 f(nextFig) = figure;
 plot3(kf(:,1)-kf(1,1),kf(:,3),kf(:,2),'g.');
 hold on;
-plot3(posdata(:,1)-kf(1,1),xs0(:,2),xs0(:,1),'r+');
+plot3(posdata(:,1)-kf(1,1),posdata(:,3),posdata(:,2),'r+');
 grid;
 axis equal;
 xlabel('Time [s]');
@@ -497,7 +494,7 @@ nextFig=nextFig+1;
 f(nextFig) = figure;
 plot3(kf(:,2),kf(:,3), kf(:, 4), 'g.');
 hold on;
-plot3(xs0(:,1),xs0(:,2), xs0(:, 3), 'r+');
+plot3(posdata(:,2), posdata(:,3), posdata(:, 4), 'r+');
 grid;
 axis equal;
 xlabel('North [m]');
@@ -510,7 +507,7 @@ nextFig=nextFig+1;
 f(nextFig) = figure;
 plot(kf(:,1)-kf(1,1),kf(:,4),'g.')
 hold on
-plot(posdata(:,1)-kf(1,1),xs0(:,3),'r+');
+plot(posdata(:,1)-kf(1,1),posdata(:,4),'r+');
 
 grid
 xlabel('Time [s]')
