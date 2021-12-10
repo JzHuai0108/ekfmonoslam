@@ -245,7 +245,7 @@ switch experim
     otherwise
         error(['Unsupported testing case ' num2str(experim) '!']);
 end
-Counter.numimurecords=40; % the number of data put in preimudata
+numPrevImuDataToKeep=40; % the number of data put in preimudata
 % Initialize the model state and covariance of state, process noise and
 % measurment noise
 
@@ -254,7 +254,7 @@ filter =EKF_filter_s0frame_bias(options);
 preimudata=LinkedList();% record the previous imu data
 
 % read in imu data
-[fimu, imudata, preimudata]=readimuheader(options.imufile, preimudata, options.startTime, Counter, imuFileType);
+[fimu, imudata, preimudata]=readimuheader(options.imufile, preimudata, options.startTime, numPrevImuDataToKeep, imuFileType);
 lastimu=preimudata.getLast();
 preimutime=lastimu(1,end);
 
@@ -435,7 +435,7 @@ while (~feof(fimu)&&curimutime<options.endTime)
     end
     
     % Read the next imu data
-    if(preimudata.size()==Counter.numimurecords)
+    if(preimudata.size()==numPrevImuDataToKeep)
         preimudata.removeFirst();
     end
     preimudata.addLast(imudata(:,end));    % record previous imudata

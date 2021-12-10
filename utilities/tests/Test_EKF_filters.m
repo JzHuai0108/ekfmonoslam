@@ -434,7 +434,7 @@ switch experim
     otherwise
         error('Unsupported testing case!');
 end
-Counter.numimurecords=40; % the number of data put in preimudata
+numPrevImuDataToKeep=40; % the number of data put in preimudata
 % Initialize the model state and covariance of state, process noise and
 % measurment noise
 switch(options.mode)
@@ -447,7 +447,7 @@ end
 preimudata=LinkedList();% record the previous imu data
 
 % read in imu data
-[fimu, imudata, preimudata]=readimuheader(options.imufile, preimudata, options.startTime, Counter, imuFileType);
+[fimu, imudata, preimudata]=readimuheader(options.imufile, preimudata, options.startTime, numPrevImuDataToKeep, imuFileType);
 lastimu=preimudata.getLast();
 preimutime=lastimu(1,end);
 imuctr=1;   % to count how many IMU data after the latest GPS observations
@@ -687,7 +687,7 @@ while (~feof(fimu)&&curimutime<options.endTime)
     end
     %     filter.SaveCamPoseandRqs02e(curimutime,whichStep);
     %Read the next imu data
-    if(preimudata.size()==Counter.numimurecords)
+    if(preimudata.size()==numPrevImuDataToKeep)
         preimudata.removeFirst();
     end
     preimudata.addLast(imudata(:,end));    % record previous imudata

@@ -324,8 +324,8 @@ if exist(resdir, 'dir') ~= 7
      mkdir(resdir);
 end
 
-Counter.numimurecords=40; % the number of data put in preimudata
-Counter.numcamconfigrecords=300; % number of camera configuration records in camconfighistory
+numPrevImuDataToKeep=40; % the number of data put in preimudata
+numcamconfigrecords=300; % number of camera configuration records in camconfighistory
 % Initialize the model state and covariance of state, process noise and
 % measurment noise
 switch(mode)
@@ -337,7 +337,7 @@ end
 preimudata=LinkedList();% record the previous imu data
 
 % read in imu data
-[fimu, imudata, preimudata]=readimuheader(options.imufile, preimudata, options.startTime, Counter, imuFileType);
+[fimu, imudata, preimudata]=readimuheader(options.imufile, preimudata, options.startTime, numPrevImuDataToKeep, imuFileType);
 lastimu=preimudata.getLast();
 preimutime=lastimu(1,end);
 imuctr=1;   % to count how many IMU data after the latest GPS observations
@@ -538,13 +538,13 @@ while (~feof(fimu)&&curimutime<options.endTime)
             %             filter.ekf_update_rho( filter);
             %             disp([step, imgepoch, curimutime, length(filter.features_info)]);
             %             if(filter.camConfigSIP~=filter.groupFrameSIP)
-            %                 if(camconfighistory.size()== Counter.numcamconfigrecords)
+            %                 if(camconfighistory.size()== numcamconfigrecords)
             %                     camconfighistory.removeFirst();
             %                 end
             %                 camconfighistory.addLast(filter.camPose);%record previous camera config estimate
             %                 % disable camera configuration, if they ramain almost constant over the
             %                 % past period, say 30 seconds
-            %                 if(mod(step,5)==0&&(camconfighistory.size()==Counter.numcamconfigrecords))
+            %                 if(mod(step,5)==0&&(camconfighistory.size()==numcamconfigrecords))
             %                     [decision, estimate]=iscamerastable(listcontent(camconfighistory), 1*pi/180 ,0.03);
             %                     if(decision)
             %                         filter.disable_camerastates( estimate );
@@ -592,7 +592,7 @@ while (~feof(fimu)&&curimutime<options.endTime)
         end
     end
     %Read the next imu data
-    if(preimudata.size()==Counter.numimurecords)
+    if(preimudata.size()==numPrevImuDataToKeep)
         preimudata.removeFirst();
     end
     preimudata.addLast(imudata(:,end));    % record previous imudata
