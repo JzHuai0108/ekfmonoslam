@@ -29,14 +29,11 @@ addpath([workspace_path 'voicebox']); % rotation functions
 addpath([workspace_path 'ekfmonocularslamv02']); % filter classes
 addpath([workspace_path 'utilities']); % data readers
 
-% than dcm2quat_v000 and dcm2euler_v000
-import java.util.LinkedList
 clear variables;
 clc; close all; format longg;
-fprintf('\n EKF of MEMS IMU on UAV!\n\n');
 rng('default');
 
-experim=1;
+experim=3;
 switch experim
     case 1
         % test with multiple GNSS and IMU data collected by sensors on a 
@@ -54,12 +51,12 @@ switch experim
         options.maxCovStep= 4 * options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
         imufile='/media/jhuai/Seagate2TB/jhuai/data/gnss-imu/20211127RTK_IMU/imu/com34.txt'; 
         imutimefile='/media/jhuai/Seagate2TB/jhuai/data/gnss-imu/20211127RTK_IMU/imu/com34-syncedlocaltimes.txt'; 
-        allImuData = readmatrix(imufile); 
-        allImuTimes = readmatrix(imutimefile); 
-        allImuData(:, 1) = allImuTimes; 
-        allGyroData = allImuData(:, 2:4); 
-        allImuData(:, 2:4) = allImuData(:, 5:7); 
-        allImuData(:, 5:7) = allGyroData; 
+        allImuData = readmatrix(imufile);
+        allImuTimes = readmatrix(imutimefile);
+        allImuData(:, 1) = allImuTimes;
+        allGyroData = allImuData(:, 2:4);
+        allImuData(:, 2:4) = allImuData(:, 5:7);
+        allImuData(:, 5:7) = allGyroData;
         dt_imu_to_gps = 0.0;
         allImuData(:, 1) = allImuData(:, 1) + dt_imu_to_gps;
 
@@ -122,21 +119,22 @@ switch experim
     case 2
         % test on Epson data integration with GPS data
         % collected by GPS Van on 2015/11/11, session D
+        % The settings of this test is problematic.
         isOutNED=true;
         resdir='/home/jhuai/Desktop/temp/gnssimu/';
         filresfile=[resdir, 'filresult.bin']; % navigation states
         imuresfile=[resdir, 'imuresult.bin']; % imu error terms
         % imu options
         options.startTime=327674.0042;
-        options.endTime= 327674.0042+ 1000; %329771.1481;
+        options.endTime= 327674.0042 + 290;
 
         options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
-        options.mechanization=2; % 1 for wander azimuth
+        options.mechanization=2;
         
-        options.imutype=7; % 5 for 3dm gx3 35, 7 for epson m-g362pdc1
-        options.dt=1/500;  %sampling interval
+        options.imutype=7; % 7 for epson m-g362pdc1
+        options.dt=1/500;
         options.maxCovStep=5*options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/20151111_140059_D_timetagged.csv';
+        imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/20151111_140059_D_timetagged.csv';
         imuFileType=5; % 5 for m-g362pdc1 csv
         allImuData=loadImuData(imufile, imuFileType, [options.startTime - 0.1, options.endTime + options.dt]); 
         % the position of antenna at startTime
@@ -156,8 +154,8 @@ switch experim
         useGPSstd=true; % use the std in the rtklib GPS solutons
         Tant2imu=[0.454; -0.746; 1.344];
         % gps start and end time
-        gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
-        
+        gpsSE=options.startTime+[0, 270];
+
         gpsfile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/Novatel_rover_KIN_20151111.pos'; 
         allGpsData=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla'); 
 
@@ -197,9 +195,9 @@ switch experim
         options.dt=1/30;  %sampling interval
         options.maxCovStep=options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
 
-        options.imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/20151111_140059_D_timetagged.csv';
+        imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/20151111_140059_D_timetagged.csv';
         imuFileType=5; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
-        allImuData=loadImuData(options.imufile, imuFileType, [options.startTime - options.dt, options.endTime + options.dt]); 
+        allImuData=loadImuData(imufile, imuFileType, [options.startTime - options.dt, options.endTime + options.dt]); 
         assert(min(diff(allImuData(:, 1))) > 1e-4);
         % the position of antenna at startTime
         inixyz_ant=[592574.6611  -4856604.0417   4078414.4645]';
