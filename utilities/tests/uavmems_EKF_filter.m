@@ -341,7 +341,7 @@ while (curimutime<options.endTime)
     
     %% GNSS observations.
     if (curimutime>=gpsdata(1))
-        if rem(gpsIndex, 20) == 0 
+        if mod(gpsIndex, 20) == 0
             fprintf('Using GNSS data at %.3f.\n', gpsdata(1, 1)); 
         end
         imuCountSinceGnss=0;
@@ -387,6 +387,7 @@ while (curimutime<options.endTime)
                     ' GTOW sec which is ', num2str(gpsdata(1) - options.startTime), ...
                     ' since the start!']);
                 gpsIndex = size(allGpsData, 1);
+                gpsdata(1) = inf;
             end
         end
     else
