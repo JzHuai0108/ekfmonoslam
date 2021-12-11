@@ -255,6 +255,8 @@ switch experim
         error(['Unsupported testing case ' num2str(experim) '!']);
 end
 
+fprintf('\nEKF of MEMS IMU on data of experiment %d!\n\n', experim);
+
 filter = EKF_filter_s0frame_bias(options);
 
 imuIndex = find(allImuData(:, 1) >= options.startTime, 1, 'first');
@@ -270,9 +272,11 @@ imuCountSinceGnss=1;   % to count how many IMU data after the latest GPS observa
 % read the GPS data and align the GPS data with the imu data
 if useGPS
     gpsdata = allGpsData(gpsIndex, :)';
+    assert(gpsdata(1) >= gpsSE(1));
 else
     gpsdata=inf;
 end
+
 % Start the main INS
 initime=preimutime;
 imuaccum=zeros(6,1);    % record the accumulated imu measurements
@@ -377,50 +381,14 @@ while (curimutime<options.endTime)
         filter.correctstates(predict,measure, H,R);
 
         %Read the next gps data that is within the specified sessions
-        gpsSErow=find(((gpsSE(:,1)<=gpsdata(1))&(gpsSE(:,2)>=gpsdata(1)))==1,1); % on which row/ session is the last gpsdata
-        lastgpstime =gpsdata(1);          
-        assert(~isempty(gpsSErow));
-
-        gpsIndex = gpsIndex + 1;
-        gpsdata = allGpsData(gpsIndex, :)';
-
-        if (gpsdata(1)>gpsSE(gpsSErow,2))
-            disp(['GPS outage starts from ' num2str(lastgpstime) ...
-                ' GTOW sec which is ', num2str(lastgpstime - options.startTime), ...
-                ' since the start!']);
-            % find the next session
-            nextSErow=0;
-            gpsSErow=find(((gpsSE(:,1)<=gpsdata(1))&(gpsSE(:,2)>=gpsdata(1)))==1,1);
-            if(isempty(gpsSErow))
-                for iota= 1: size(gpsSE,1)
-                    if gpsSE(iota,1)>= gpsdata(1)
-                        nextSErow= iota;                        
-                        break;
-                    end
-                end
-                if(nextSErow==0)
-                    disp(['GPS completely gone from ' num2str(lastgpstime) ...
-                          ' GTOW sec which is ', num2str(lastgpstime - options.startTime), ...
-                          ' since the start!']);
-                    gpsdata(1)=inf;% completely stop using GPS
-                else
-                    while(gpsdata(1)< gpsSE(nextSErow,1))
-                        gpsIndex = gpsIndex + 1;
-                        gpsdata = allGpsData(gpsIndex, :)';
-
-                        while(gpsdata(1) > gpsSE(nextSErow,2) && nextSErow< size(gpsSE,1))
-                            nextSErow= nextSErow+1;                            
-                        end
-                    end
-                    disp(['GPS will resume from ' num2str(gpsdata(1)) ...
-                          ' GTOW sec which is ', num2str(gpsdata(1) - options.startTime), ...
-                          ' since the start!']);            
-                end
-            else
-                nextSErow = gpsSErow;
-                disp(['GPS resumes from ' num2str(gpsdata(1)) ...
-                      ' GTOW sec which is ', num2str(gpsdata(1) - options.startTime), ...
-                      ' since the start!']);
+        if gpsIndex < size(allGpsData, 1)
+            gpsIndex = gpsIndex + 1;
+            gpsdata = allGpsData(gpsIndex, :)';
+            if gpsdata(1) >= gpsSE(2) || gpsIndex == size(allGpsData, 1)
+                disp(['GNSS outage starts from ' num2str(gpsdata(1)) ...
+                    ' GTOW sec which is ', num2str(gpsdata(1) - options.startTime), ...
+                    ' since the start!']);
+                gpsIndex = size(allGpsData, 1);
             end
         end
     else
