@@ -109,14 +109,9 @@ switch experim
         rateNHC=round(sqrt(1/options.dt));
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=1.0;
-        
- 
+
         gn0=[-0.00005; 0.00036; 9.79347]; % WHU xinghu building rear door
         wie2n0=[0;0;0]; % no earth rotation
-        % vertical velocity constraints
-        rateVel=inf; %round(sqrt(1/options.dt)/2);
-        sigmaVertVel=6; % unit m/s
-        sigmaHorizVel=10;
 
         options.imuErrors=zeros(6,1);
         staticUntilIndex = find(allImuData(:, 1) < zuptSE(2), 1, 'last' );
@@ -183,11 +178,6 @@ switch experim
         gn0= [ 0; 0; 9.804]; % gravity in n frame at start
         
         wie2n0=[0;0;0]; % earth rotation
-        
-        % vertical velocity constraints
-        rateVel=inf; %round(sqrt(1/options.dt)/2);
-        sigmaVertVel=6; % unit m/s
-        sigmaHorizVel=10; 
     case 3
         % test on inertial data captured by the Epson IMU mounted on a car.
         % The GPS is kept out in the last 20 seconds to verify that the
@@ -250,11 +240,6 @@ switch experim
 
         gn0= [ 0; 0; 9.804]; % gravity in n frame at start
         wie2n0=[0;0;0]; % earth rotation
-        
-        % vertical velocity constraints
-        rateVel=inf; %round(sqrt(1/options.dt)/2);
-        sigmaVertVel=6; % unit m/s
-        sigmaHorizVel=10;
 
         % state initialization options. 
         % Biases computed by averaging leads to slightly worse results
@@ -350,15 +335,6 @@ while (curimutime<options.endTime)
         measure=[0;0];
         R=eye(2)*options.sigmaNHC^2;
         filter.correctstates(predict,measure, H,R);
-    end
-    %% Vertical velocity constraints.
-    useVel =mod(imuCountSinceGnss, rateVel)==0;
-    if (useVel)        
-        predict=filter.rvqs0(4:6);
-        H=[eye(3), zeros(3,filter.covDim-3)];
-        measure=zeros(3,1);
-        R=diag([sigmaHorizVel,sigmaHorizVel,sigmaVertVel].^2);
-        filter.correctstates(predict,measure, H,R, 1);
     end
     
     %% GNSS observations.
