@@ -110,11 +110,8 @@ switch experim
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=1.0;
         
-        % gravity correction related parameters
-        rateGravity=inf;        
+ 
         gn0=[-0.00005; 0.00036; 9.79347]; % WHU xinghu building rear door
-        sigmaGravity=2; % unit m/s^2, gravity measurement noise
-        gravityMagCutoff=2; 
         wie2n0=[0;0;0]; % no earth rotation
         % vertical velocity constraints
         rateVel=inf; %round(sqrt(1/options.dt)/2);
@@ -183,11 +180,7 @@ switch experim
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2.0;
         
-        % gravity correction related parameters
-        rateGravity=inf;
         gn0= [ 0; 0; 9.804]; % gravity in n frame at start
-        sigmaGravity=2; % unit m/s^2, gravity measurement noise
-        gravityMagCutoff=2; 
         
         wie2n0=[0;0;0]; % earth rotation
         
@@ -255,12 +248,7 @@ switch experim
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2.0;
 
-        % gravity correction related parameters
-        rateGravity=inf;
         gn0= [ 0; 0; 9.804]; % gravity in n frame at start
-        sigmaGravity=2; % unit m/s^2, gravity measurement noise
-        gravityMagCutoff=2; 
-        
         wie2n0=[0;0;0]; % earth rotation
         
         % vertical velocity constraints
@@ -347,16 +335,7 @@ while (curimutime<options.endTime)
         R=eye(3)*options.sigmaZUPT^2;
         filter.correctstates(predict,measure, H,R);
     end
-    %% Gravity norm measurements.
-    useGravity =mod(imuCountSinceGnss, rateGravity)==0;
-    if (useGravity&& abs(norm(imudata(2:4))-9.81)< gravityMagCutoff)
-        predAccel=imudata(2:4)-filter.imuErrors(1:3);
-        predict=-quatrot_v000(filter.rvqs0(7:10),predAccel,1);
-        H=[zeros(3,6) rotqr2ro(filter.rvqs0(7:10))'*skew(predAccel) zeros(3,filter.covDim-9)];
-        measure=gn0;
-        R=sigmaGravity^2*eye(3);
-        filter.correctstates(predict,measure, H,R);
-    end
+
     %% NonHolonomic constraints.
     isNHC =mod(imuCountSinceGnss, rateNHC)==1;
     velnorm=filter.GetVelocityMag();
