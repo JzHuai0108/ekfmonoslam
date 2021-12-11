@@ -312,7 +312,7 @@ while (curimutime<options.endTime)
     end
     %% ZUPT (zero velocity updates).
     isStatic =~isempty(zuptSE) && ~isempty(find(((zuptSE(:,1)<=curimutime)&(zuptSE(:,2)>=curimutime))==1,1));
-    isZUPT =mod(imuCountSinceGnss, rateZUPT)==0;
+    isZUPT =mod(imuCountSinceGnss, rateZUPT)==1;
     if (isStatic&&isZUPT)
         measure=zeros(3,1);
         predict=filter.rvqs0(4:6);
@@ -360,38 +360,22 @@ while (curimutime<options.endTime)
         measure = p_N_ant - quatrot_v000(filter.rvqs0(7:10),Tant2imu,1);
 
         predict=filter.rvqs0(1:3);
-        % use three channels
-        if(1)
-            H=sparse([eye(3), zeros(3), zeros(3,size(filter.p_k_k,1)-6)]);
-            % the following setting of noise variances is suitable for RTKlib output
-            if(~useGPSstd)
-                if(gpsdata(5)==1)
-                    R=diag([0.05,0.05,0.1].^2);
-                elseif(gpsdata(5)==2)
-                    R=diag([0.5,0.5,1.0].^2);
-                else
-                    R=diag([10,10,10].^2);
-                end
+
+        H=sparse([eye(3), zeros(3), zeros(3,size(filter.p_k_k,1)-6)]);
+        % the following setting of noise variances is suitable for RTKlib output
+        if(~useGPSstd)
+            if(gpsdata(5)==1)
+                R=diag([0.05,0.05,0.1].^2);
+            elseif(gpsdata(5)==2)
+                R=diag([0.5,0.5,1.0].^2);
             else
-                R=4*diag(gpsdata(7:9).^2);
+                R=diag([10,10,10].^2);
             end
-            filter.correctstates(predict,measure, H,R);
-        else % only use height
-            H=sparse([0,0,1, zeros(1,size(filter.p_k_k,1)-3)]);
-            % the following setting of noise variances is suitable for RTKlib output
-            if(~useGPSstd)
-                if(gpsdata(5)==1)
-                    R=0.05^2;
-                elseif(gpsdata(5)==2)
-                    R=0.1^2;
-                else
-                    R=1^2;
-                end
-            else
-                R=4*gpsdata(9)^2;
-            end
-            filter.correctstates(predict(3),measure(3), H,R, 1);
+        else
+            R=4*diag(gpsdata(7:9).^2);
         end
+        filter.correctstates(predict,measure, H,R);
+
         %Read the next gps data that is within the specified sessions
         gpsSErow=find(((gpsSE(:,1)<=gpsdata(1))&(gpsSE(:,2)>=gpsdata(1)))==1,1); % on which row/ session is the last gpsdata
         lastgpstime =gpsdata(1);          
