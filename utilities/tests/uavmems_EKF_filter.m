@@ -36,67 +36,83 @@ clc; close all; format longg;
 fprintf('\n EKF of MEMS IMU on UAV!\n\n');
 rng('default');
 
-experim=3;
+experim=1;
 switch experim
     case 1
-        % test on Microstrain 3dm gx3-35 data integration with GPS data
-        % collected by octoptor on 2014/10/08 velodyne test       
+        % test with multiple GNSS and IMU data collected by sensors on a 
+        % scout mini on 2021/11/27.
         isOutNED=true;
-        resdir='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\temp\';
+        resdir='/home/jhuai/Desktop/temp/gnssimu/';
         filresfile=[resdir, 'filresult.bin']; % navigation states
         imuresfile=[resdir, 'imuresult.bin']; % imu error terms
-        % imu options                       
-        options.startTime=320334.7513; % for velodyne test just after launching
-        options.endTime= 320522.6513; % exclude landing for velodyne test
+        % imu options
         options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
-        options.mechanization=2; % 1 for wander azimuth
+        options.mechanization=2;
         
-        options.imutype=5; % 5 for 3dm gx3 35, 7 for epson m-g362pdc1
-        options.dt=1/100;  %sampling interval
-        options.maxCovStep=options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-        options.imufile='F:\oct082014velodyne\IMU_MicroStrain-Velodyne.csv';
-        
-        imuFileType=4; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
-        inixyz_ant= [ 579144.6076            -4851437.6245           4086499.4477]';% the position of antenna at startTime for velodyne
-        options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
-        Ce2n0=llh2dcm_v000(options.inillh_ant(1:2),[0;1]);
-        
-        options.imuErrors=zeros(6,1);         
-        options.imuErrors(4:6)=[ 5.23585856565723e-07      0.000768720262789487     -3.76258753649856e-05]'; % for microstrain velodyne
-        options.imuErrors(3)=1.5;
-   
-        options.Vn=[0;0;0]; % roughly estimated from GPS
-        options.qb2n=  roteu2qr('xyz',[0;0; 80]/180*pi); % the rotation from imu to w-frame(rotated n-frame)
-                
+        options.imutype=6; % 6 for steval mki062v2
+        options.dt=1/230;  %sampling interval
+        options.maxCovStep= 4 * options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
+        imufile='/media/jhuai/Seagate2TB/jhuai/data/gnss-imu/20211127RTK_IMU/imu/com34.txt'; 
+        imutimefile='/media/jhuai/Seagate2TB/jhuai/data/gnss-imu/20211127RTK_IMU/imu/com34-syncedlocaltimes.txt'; 
+        allImuData = readmatrix(imufile); 
+        allImuTimes = readmatrix(imutimefile); 
+        allImuData(:, 1) = allImuTimes; 
+        allGyroData = allImuData(:, 2:4); 
+        allImuData(:, 2:4) = allImuData(:, 5:7); 
+        allImuData(:, 5:7) = allGyroData; 
+        dt_imu_to_gps = 0.0;
+        allImuData(:, 1) = allImuData(:, 1) + dt_imu_to_gps;
+
+        options.inillh_ant = [30.5298813668333 * pi / 180, 114.350355321667 * pi / 180, 20.8869]';
+        options.Cb2imu=[1 0  0; 0 1 0; 0 0 1];% vehicle body frame to imu frame 
+        options.Vn=[0;0;0];
+        R_ned_enu = [0, 1, 0; 1, 0, 0; 0, 0, -1]; 
+        R_W_b = R_ned_enu * R3(-45 * pi / 180); 
+        options.qb2n = rotro2qr(R_W_b);
+
         options.InvalidateIMUerrors=false;
-        options.initAttVar=2*pi/180; % 1 deg std for roll and pitch, 2 times 1 deg for yaw std
-        
+        options.initAttVar=2*pi/180; % std for roll and pitch, 3 times std for yaw
+
         % GPS options
-        useGPS=false; % if to only use height observation, modify if(1) to if(0) in the following code
-        useGPSstd=true; % use the std in the rtklib GPS solutons
-        % for velodyne microstrain, useGPSstd gives better integration results
-        Tant2imu=[8;0;-118]*1e-3; % from Greg's drawing, the position of antenna in microstrain frame
-%         Tant2imu=[4;5;99]*1e-3; % from Greg's drawing, the position of antenna in epson frame
-        % gps start and end time
-        gpsSE=[options.startTime, options.startTime+2000];
-        
-        gpsfile='F:\oct082014velodyne\Velodyne.pos';
+        useGPS=true;
+        useGPSstd=true; % use the std provided by the GPS data.
+        Tant2imu = [3.5; 3.5; 11.2] * 1e-2; % the position of antenna in IMU frame
+
         isConstantVel=false; % use constant velocity model
         options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
-        
+ 
+        gpsfile='/media/jhuai/Seagate2TB/jhuai/data/gnss-imu/20211127RTK_IMU/processed/ublox_20211127_lla.txt'; 
+        allGpsData = readmatrix(gpsfile); 
+        allGpsData(:, 2:3) = allGpsData(:, 2:3) * pi / 180; 
+        allGpsData(:, 7:9) = allGpsData(:, 5:7); 
+        allGpsData(:, 5:6) = 0;
+
+        % align GPS and IMU data at the beginning 
+        imubeginbuffer = options.dt * 5;
+        maxstarttime = max(allGpsData(1, 1), allImuData(1, 1)) + imubeginbuffer;  
+        allGpsData = allGpsData(allGpsData(:, 1) >= maxstarttime, :);
+        allImuData = allImuData(allImuData(:, 1) >= maxstarttime - imubeginbuffer, :);
+
+        options.startTime = maxstarttime;
+        options.endTime = maxstarttime + 600;
+        gpsSE=[options.startTime, options.endTime];
+        gpsEndIndex = find(allGpsData(:, 1) > gpsSE(2), 1, 'first');
+        allGpsData = allGpsData(1:gpsEndIndex, :);
+
         % ZUPT start and end Time, n x 2 matrix, n is the number of segment
-        zuptSE=[options.startTime, 320301.8429];%  320541.8429,  320688]; % for oct08 2014 velodyne dataset
-        options.sigmaZUPT = 0.05;% unit m/s
-        rateZUPT=round(sqrt(1/options.dt)); % from tests, we see zupt has adverse effect in this case
+        zuptSE=[options.startTime, options.startTime + 300];
+        options.sigmaZUPT = 0.1; % unit m/s
+        rateZUPT=round(sqrt(1/options.dt));
+
         % NHC options
         options.sigmaNHC = 0.1;% unit m/s
-        rateNHC=inf; % turn off NHC
+        rateNHC=round(sqrt(1/options.dt));
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
-        options.minNHCVel=2.0;
+        options.minNHCVel=1.0;
         
-       % gravity correction related parameters
+        % gravity correction related parameters
         rateGravity=inf;        
-        gn0=-[ -0.180653756542627        0.0836986162201811     -9.80614572647246]'; % for microstrain velodyne test
+        gn0=[-0.00005; 0.00036; 9.79347]; % WHU xinghu building rear door
         sigmaGravity=2; % unit m/s^2, gravity measurement noise
         gravityMagCutoff=2; 
         wie2n0=[0;0;0]; % no earth rotation
@@ -105,11 +121,17 @@ switch experim
         sigmaVertVel=6; % unit m/s
         sigmaHorizVel=10;
 
+        options.imuErrors=zeros(6,1);
+        staticUntilIndex = find(allImuData(:, 1) < zuptSE(2), 1, 'last' );
+        gyroBias = mean(allImuData(1:staticUntilIndex, 5:7), 1)';  
+        accelBias = mean(allImuData(1:staticUntilIndex, 2:4), 1)' + ...
+            options.Cb2imu * quatrot_v000(options.qb2n, gn0, 1);  
+        options.imuErrors = [accelBias; gyroBias];
     case 2
         % test on Epson data integration with GPS data
         % collected by GPS Van on 2015/11/11, session D
         isOutNED=true;
-        resdir='C:\Users\huai.3\Desktop\huai work\OctoptorINSGPStest\temp\';
+        resdir='/home/jhuai/Desktop/temp/gnssimu/';
         filresfile=[resdir, 'filresult.bin']; % navigation states
         imuresfile=[resdir, 'imuresult.bin']; % imu error terms
         % imu options
@@ -122,9 +144,9 @@ switch experim
         options.imutype=7; % 5 for 3dm gx3 35, 7 for epson m-g362pdc1
         options.dt=1/500;  %sampling interval
         options.maxCovStep=5*options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
-
-        options.imufile='\\File.ceegs.ohio-state.edu\SPIN\MultiSensor_NOV_11_2015\IMU_Epson\20151111_140059_D_timetagged.csv';
-        imuFileType=5; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
+        options.imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/20151111_140059_D_timetagged.csv';
+        imuFileType=5; % 5 for m-g362pdc1 csv
+        allImuData=loadImuData(imufile, imuFileType, [options.startTime - 0.1, options.endTime + options.dt]); 
         % the position of antenna at startTime
         inixyz_ant=[592574.6611  -4856604.0417   4078414.4645]';
         options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
@@ -144,8 +166,9 @@ switch experim
         % gps start and end time
         gpsSE=options.startTime+[0, 350; 420, 500; 540, 600];
         
-        gpsfile='C:\JianzhuHuai\GPS_IMU\programs\matlab_ws\data\Novatel_rover_KIN_20151111.pos';
-        
+        gpsfile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/Novatel_rover_KIN_20151111.pos'; 
+        allGpsData=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla'); 
+
         isConstantVel=false; % use constant velocity model
         options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
         
@@ -262,6 +285,10 @@ end
 filter = EKF_filter_s0frame_bias(options);
 
 imuIndex = find(allImuData(:, 1) >= options.startTime, 1, 'first');
+if imuIndex < 2
+    error('The start time %.4f is before the first IMU data at %.4f.', options.startTime, allImuData(1, 1));
+end
+
 preimutime = allImuData(imuIndex - 1, 1);
 imudata = allImuData(imuIndex, :)';
 
@@ -470,8 +497,7 @@ fclose all;
 
 %% Plot navigation results
 kf = readdata(filresfile, 1+18);
-
-posdata=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla');
+posdata=allGpsData;
 for i=1:size(posdata,1)
     [north, east, down] = geodetic2ned(posdata(i, 2), posdata(i, 3), posdata(i, 4), ...
             options.inillh_ant(1), options.inillh_ant(2), options.inillh_ant(3), ...

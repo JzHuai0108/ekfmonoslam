@@ -21,7 +21,8 @@ fgps=fopen(gpsfile,'rt');
 if fgps~=-1
     %% Discard all observation data before the current time
     %remove the header of gps posdata
-    hstream= fgetl(fgps);
+    hstream = fgetl(fgps);
+    hstream0 = hstream;
     while(true)
         if ~contains(hstream,'%')
             break;
