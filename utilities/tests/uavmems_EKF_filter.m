@@ -99,11 +99,11 @@ switch experim
         % ZUPT start and end Time, n x 2 matrix, n is the number of segment
         zuptSE=[options.startTime, options.startTime + 300];
         options.sigmaZUPT = 0.1; % unit m/s
-        rateZUPT=round(sqrt(1/options.dt));
+        numImuDataPerZUPT=round(sqrt(1/options.dt));
 
         % NHC options
         options.sigmaNHC = 0.1;% unit m/s
-        rateNHC=round(sqrt(1/options.dt));
+        numImuDataPerNHC = round(sqrt(1/options.dt));
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=1.0;
 
@@ -118,8 +118,7 @@ switch experim
         options.imuErrors = [accelBias; gyroBias];
     case 2
         % test on Epson data integration with GPS data
-        % collected by GPS Van on 2015/11/11, session D
-        % The settings of this test is problematic.
+        % collected by GPS Van on 2015/11/11, session D.
         isOutNED=true;
         resdir='/home/jhuai/Desktop/temp/gnssimu/';
         filresfile=[resdir, 'filresult.bin']; % navigation states
@@ -166,10 +165,10 @@ switch experim
         % ZUPT start and end Time, n x 2 matrix, n is the number of segment        
         zuptSE=[options.startTime, options.startTime+180];
         options.sigmaZUPT = 0.1;% unit m/s
-        rateZUPT=round(sqrt(1/options.dt));
+        numImuDataPerZUPT=round(sqrt(1/options.dt));
         % NHC options
         options.sigmaNHC = 0.1;% unit m/s
-        rateNHC=inf; % turn off NHC
+        numImuDataPerNHC=inf; % turn off NHC
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2.0;
         
@@ -229,10 +228,10 @@ switch experim
         % ZUPT start and end Time, n x 2 matrix, n is the number of segment        
         zuptSE=[options.startTime, options.startTime+30];
         options.sigmaZUPT = 0.1;% unit m/s
-        rateZUPT=round(sqrt(1/options.dt));
+        numImuDataPerZUPT=round(sqrt(1/options.dt));
         % NHC options
         options.sigmaNHC = 0.1;% unit m/s
-        rateNHC = inf; % Turn off NHC since we don't know Cb2imu precisely.
+        numImuDataPerNHC = inf; % Turn off NHC since we don't know Cb2imu precisely.
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
         options.minNHCVel=2.0;
 
@@ -254,14 +253,15 @@ switch experim
 end
 
 fprintf('\nEKF of MEMS IMU on data of experiment %d!\n\n', experim);
-
+numUsedGnssData = 0;
+numUsedNHC = 0;
+numUsedZUPT = 0;
 filter = EKF_filter_s0frame_bias(options);
 
 imuIndex = find(allImuData(:, 1) >= options.startTime, 1, 'first');
 if imuIndex < 2
     error('The start time %.4f is before the first IMU data at %.4f.', options.startTime, allImuData(1, 1));
 end
-
 preimutime = allImuData(imuIndex - 1, 1);
 imudata = allImuData(imuIndex, :)';
 
@@ -314,17 +314,18 @@ while (curimutime<options.endTime)
     end
     %% ZUPT (zero velocity updates).
     isStatic =~isempty(zuptSE) && ~isempty(find(((zuptSE(:,1)<=curimutime)&(zuptSE(:,2)>=curimutime))==1,1));
-    isZUPT =mod(imuCountSinceGnss, rateZUPT)==1;
+    isZUPT = numImuDataPerZUPT < imuCountSinceGnss && mod(imuCountSinceGnss, numImuDataPerZUPT)==1;
     if (isStatic&&isZUPT)
         measure=zeros(3,1);
         predict=filter.rvqs0(4:6);
         H=sparse([zeros(3) eye(3) zeros(3,size(filter.p_k_k,1)-6)]);
         R=eye(3)*options.sigmaZUPT^2;
         filter.correctstates(predict,measure, H,R);
+        numUsedZUPT = numUsedZUPT + 1;
     end
 
     %% NonHolonomic constraints.
-    isNHC =mod(imuCountSinceGnss, rateNHC)==1;
+    isNHC = numImuDataPerNHC < imuCountSinceGnss && mod(imuCountSinceGnss, numImuDataPerNHC)==1;
     velnorm=filter.GetVelocityMag();
     if (isNHC&&velnorm>options.minNHCVel)
         % non-holonomic constraints
@@ -337,6 +338,7 @@ while (curimutime<options.endTime)
         measure=[0;0];
         R=eye(2)*options.sigmaNHC^2;
         filter.correctstates(predict,measure, H,R);
+        numUsedNHC = numUsedNHC + 1;
     end
     
     %% GNSS observations.
@@ -377,7 +379,7 @@ while (curimutime<options.endTime)
             R=4*diag(gpsdata(7:9).^2);
         end
         filter.correctstates(predict,measure, H,R);
-
+        numUsedGnssData = numUsedGnssData + 1;
         %Read the next gps data that is within the specified sessions
         if gpsIndex < size(allGpsData, 1)
             gpsIndex = gpsIndex + 1;
@@ -398,7 +400,10 @@ while (curimutime<options.endTime)
     imudata = allImuData(imuIndex, :)';
     curimutime = imudata(1);
 end
-fprintf('Done.\n\n');
+
+fprintf(['EKF filter uses %d IMU data, %d ZUPT constraints, ' ...
+    '%d NHC constraints, and %d GNSS observations.\n'], ...
+    imuIndex, numUsedZUPT, numUsedNHC, numUsedGnssData);
 fclose all;
 
 %% Plot navigation results
@@ -466,7 +471,6 @@ ylabel('m/s^2')
 legend('X','Y','Z')
 title('Accelerometer bias drift');
 
-%close all
 nextFig=nextFig+1;
 nextDim=nextDim+3;
 f(nextFig) = figure;
@@ -478,7 +482,6 @@ ylabel('radian/s')
 legend('X','Y','Z')
 title('Gyro bias drift');
 
-%close all
 nextFig=nextFig+1;
 nextDim=nextDim+3;
 f(nextFig) = figure;
@@ -489,7 +492,6 @@ xlabel('Time [s]')
 legend('X','Y','Z')
 title('Accelerometer bias drift cov std');
 
-%close all
 nextFig=nextFig+1;
 nextDim=nextDim+3;
 f(nextFig) = figure;
