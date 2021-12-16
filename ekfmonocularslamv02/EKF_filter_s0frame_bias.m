@@ -165,10 +165,14 @@ classdef EKF_filter_s0frame_bias < handle
                 filter.rvqs0(1:6)=filter.rvqs0(1:6)-deltaX(1:6); % position and velocity                            
                 filter.imuErrors(1:3) = filter.imuErrors(1:3) + deltaX(filter.imuBiasDriftSIP+(0:2));  
             end
-        end      
-       
-        function SaveToFile(filter, inillh_ant, preimutime, ffilres)          
-            fwrite(ffilres,[preimutime;filter.rvqs0(1:6);rotqr2eu('xyz', [filter.rvqs0(7); -filter.rvqs0(8:10)])*180/pi;full(sqrt(diag(filter.p_k_k(1:9,1:9))))],'double');
+        end
+
+        function SaveToFile(filter, ~, preimutime, ffilres)
+            formatString = ['%.8f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.8f,%.8f,%.8f,', ...
+                '%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.8f,%.8f,%.8f\n'];
+            fprintf(ffilres, formatString, [preimutime;filter.rvqs0(1:6); ...
+                rotqr2eu('xyz', [filter.rvqs0(7); -filter.rvqs0(8:10)])*180/pi;...
+                full(sqrt(diag(filter.p_k_k(1:9,1:9))))]);
         end
         function mag=GetVelocityMag(filter)
             mag=norm(filter.rvqs0(4:6),2);

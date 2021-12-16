@@ -40,8 +40,8 @@ switch experim
         % scout mini on 2021/11/27.
         isOutNED=true;
         resdir='/home/jhuai/Desktop/temp/gnssimu/';
-        filresfile=[resdir, 'filresult.bin']; % navigation states
-        imuresfile=[resdir, 'imuresult.bin']; % imu error terms
+        filresfile=[resdir, 'filresult.csv']; % navigation states
+        imuresfile=[resdir, 'imuresult.csv']; % imu error terms
         % imu options
         options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
         options.mechanization=2;
@@ -121,8 +121,8 @@ switch experim
         % collected by GPS Van on 2015/11/11, session D.
         isOutNED=true;
         resdir='/home/jhuai/Desktop/temp/gnssimu/';
-        filresfile=[resdir, 'filresult.bin']; % navigation states
-        imuresfile=[resdir, 'imuresult.bin']; % imu error terms
+        filresfile=[resdir, 'filresult.csv']; % navigation states
+        imuresfile=[resdir, 'imuresult.csv']; % imu error terms
         % imu options
         options.startTime=327674.0042;
         options.endTime= 327674.0042 + 290;
@@ -282,8 +282,8 @@ curimutime=imudata(1);
 covupt_time=preimutime; %the time that we last updated the covariance
 
 fprintf('Estimating trajectory...\n');
-ffilres=fopen(filresfile,'Wb'); % navigation states, 'W' use buffer and binary fwrite()
-fimures=fopen(imuresfile,'Wb'); % imu errors
+ffilres=fopen(filresfile,'Wt'); % navigation states
+fimures=fopen(imuresfile,'Wt'); % imu errors
 
 while (curimutime<options.endTime)
     %% Write IMU's position and velocity, rpy and accel and gyro bias to the files
@@ -307,10 +307,10 @@ while (curimutime<options.endTime)
         %Record covariance and navigation solution for the smoother
         %Note that I am recording the predicted solutions. That is why the
         %backward part must use filtered solution.
-        
-        fwrite(fimures,[curimutime;filter.imuErrors;...
+        formatString = '%.8f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.8f,%.8f,%.8f,%.8f,%.8f,%.8f\n';
+        fprintf(fimures, formatString, [curimutime;filter.imuErrors;...
             full(sqrt(diag(filter.p_k_k(filter.imuBiasDriftSIP+(0:5),...
-            filter.imuBiasDriftSIP+(0:5)))))],'double');
+            filter.imuBiasDriftSIP+(0:5)))))]);
     end
     %% ZUPT (zero velocity updates).
     isStatic =~isempty(zuptSE) && ~isempty(find(((zuptSE(:,1)<=curimutime)&(zuptSE(:,2)>=curimutime))==1,1));
@@ -408,7 +408,7 @@ fprintf(['EKF filter uses %d IMU data, %d ZUPT constraints, ' ...
 fclose all;
 
 %% Plot navigation results
-kf = readdata(filresfile, 1+18);
+kf = readmatrix(filresfile);
 posdata=allGpsData;
 for i=1:size(posdata,1)
     [north, east, down] = geodetic2ned(posdata(i, 2), posdata(i, 3), posdata(i, 4), ...
@@ -455,11 +455,8 @@ ylabel('Height/m')
 title('Height of antenna by KF(green) and reference(red)');
 saveas(f(nextFig),[resdir 'red truth and height'],'fig');
 
-filresfile=[resdir, 'filresult.bin'];
-kf = readdata(filresfile, 1+18);
 plotkf_v001(kf, resdir);
-imuresfile=[resdir, 'imuresult.bin'];
-err = readdata(imuresfile, 1+12);
+err = readmatrix(imuresfile);
 
 nextFig=nextFig+1;
 nextDim=2;

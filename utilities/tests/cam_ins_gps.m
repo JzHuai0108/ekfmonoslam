@@ -27,7 +27,7 @@ switch experim
         Vn=[0;0;0];
         iniRPY = [-0.006225586	-0.002166748	-90.32959*pi/180];% 500600 from h764g
         qbn=att2qua(iniRPY);
-        options.useCam=false; 
+        options.useCam=false;
         options.useGPS=true;
         options.InvalidateIMUerrors=false;
         options.initAttVar=1*pi/180;
