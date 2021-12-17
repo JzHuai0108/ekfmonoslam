@@ -32,10 +32,10 @@ switch(imuFileType)
         mass=textscan(hstream,'%f','delimiter',',');
         imudata=mass{1};
         while(imudata(7,1)==0||imudata(1,1)<startTime)
-            previousImuData.addLast(imudata(:,end));%record previous imudata
-            if(previousImuData.size()>numPrevImuDataToKeep)
-                previousImuData.removeFirst();
+            if(length(previousImuData)==numPrevImuDataToKeep)
+                previousImuData(1) = [];
             end
+            previousImuData{end + 1} = imudata(:,end);
             hstream= fgetl(fimu);
             mass=textscan(hstream,'%f','delimiter',',');
             imudata=mass{1};
@@ -56,10 +56,10 @@ switch(imuFileType)
         while(imudata(9,1)==0||imudata(2,1)<startTime)
             imudata=imudata(2:8,1);% gps time, xyz delta v, xyz delta theta
             imudata(2:4,1)=imudata(2:4,1)*.3048;% convert to metric unit meter
-            previousImuData.addLast(imudata(:,end));%record previous imudata
-            if(previousImuData.size()>numPrevImuDataToKeep)
-                previousImuData.removeFirst();
+            if(length(previousImuData)==numPrevImuDataToKeep)
+                previousImuData(1) = [];
             end
+            previousImuData{end + 1} = imudata(:,end);
             h= fgetl(fimu);
             mass=textscan(h,'%f','delimiter',',');
             imudata=mass{1};
@@ -83,10 +83,10 @@ switch(imuFileType)
             imudata(2:4,1) = imudata(2:4,1)/1000.0 * imu_scalefactor;
             imudata(5:7,1) = imudata(5:7,1)*pi/180;
             imudata(6,1) = -imudata(6,1); % wrong data format
-            previousImuData.addLast(imudata(:,end));%record previous imudata
-            if(previousImuData.size()>numPrevImuDataToKeep)
-                previousImuData.removeFirst();
+            if(length(previousImuData)==numPrevImuDataToKeep)
+                previousImuData(1) = [];
             end
+            previousImuData{end + 1} = imudata(:,end);
             hstream= fgetl(fimu);
             mass=textscan(hstream,'%f','delimiter',' ');
             imudata=mass{1};
@@ -107,10 +107,10 @@ switch(imuFileType)
             imudata(2:4,1) = imudata(2:4,1)/1000.0 * imu_scalefactor;
             imudata(5:7,1) = imudata(5:7,1)*pi/180;
             imudata(6,1) = -imudata(6,1); % wrong data format
-            previousImuData.addLast(imudata(:,end));%record previous imudata
-            if(previousImuData.size()>numPrevImuDataToKeep)
-                previousImuData.removeFirst();
+            if(length(previousImuData)==numPrevImuDataToKeep)
+                previousImuData(1) = [];
             end
+            previousImuData{end + 1} = imudata(:,end);
             hstream= fgetl(fimu);
             mass=textscan(hstream,'%f','delimiter',',');
             imudata=mass{1};
@@ -134,10 +134,10 @@ switch(imuFileType)
         while(imudata(1)<startTime || sum(isnan(imudata)))
             if(~sum(isnan(imudata)))
                 imudata(2:4)=imudata(2:4)*9.80665;
-                previousImuData.addLast(imudata(:,end));%record previous imudata
-                if(previousImuData.size()>numPrevImuDataToKeep)
-                    previousImuData.removeFirst();
+                if(length(previousImuData)==numPrevImuDataToKeep)
+                    previousImuData(1) = [];
                 end
+                previousImuData{end + 1} = imudata(:,end);
             end
             hstream=fgetl(fimu);
             if (~ischar(hstream))
@@ -163,10 +163,10 @@ switch(imuFileType)
         while(imudata(1)<startTime)
             imudata(2:4)=imudata(2:4)*9.8/1000;
             imudata(5:7)=imudata(5:7)*pi/180;
-            previousImuData.addLast(imudata(:,end));%record previous imudata
-            if(previousImuData.size()>numPrevImuDataToKeep)
-                previousImuData.removeFirst();
+            if(length(previousImuData)==numPrevImuDataToKeep)
+                previousImuData(1) = [];
             end
+            previousImuData{end + 1} = imudata(:,end);
             hstream=fgetl(fimu);
             if (~ischar(hstream))
                 imudata=[];

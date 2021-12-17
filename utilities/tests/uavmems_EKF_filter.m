@@ -71,7 +71,7 @@ switch experim
         % GPS options
         useGPS=true;
         useGPSstd=true; % use the std provided by the GPS data.
-        Tant2imu = [3.5; 3.5; 11.2] * 1e-2; % the position of antenna in IMU frame
+        options.imu_p_ant = [3.5; 3.5; 11.2] * 1e-2; % the position of antenna in IMU frame
 
         isConstantVel=false; % use constant velocity model
         options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
@@ -149,7 +149,7 @@ switch experim
         % GPS options
         useGPS=true; 
         useGPSstd=true; % use the std in the rtklib GPS solutons
-        Tant2imu=[0.454; -0.746; 1.344];
+        options.imu_p_ant = [0.454; -0.746; 1.344];
         % gps start and end time
         gpsSE=options.startTime+[0, 270];
 
@@ -198,9 +198,9 @@ switch experim
         options.maxCovStep=1/30; %maximum covariance propagation step, if equal to dt, means single speed mode
 
         imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/MultiSensor_NOV_11_2015/IMU_MicroStrain/3DM-GX3 Data Log D.csv';
-        imuFileType=4; % 4 for Microstrain csv
-        allImuData=loadImuData(imufile, imuFileType, [options.startTime - options.dt, options.endTime + options.dt]); 
-        assert(min(diff(allImuData(:, 1))) > 1e-4);
+
+        imuDataReader = MicrostrainImuDataReader(imufile, options.startTime);
+
         % position of the rear antenna at startTime
         inixyz_ant=[592575.6758  -4856608.0160   4078416.7701]';
         options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
@@ -214,13 +214,13 @@ switch experim
         % GPS options
         useGPS=true;
         useGPSstd=true; % use the std in the rtklib GPS solutons
-        Tant2imu = R_H2_Im' * (p_H2_H1 - p_H2_Im + R_H2_H1 * p_H1_Ar);
+        options.imu_p_ant = R_H2_Im' * (p_H2_H1 - p_H2_Im + R_H2_H1 * p_H1_Ar);
         % gps start and end time
         gpsSE=options.startTime+[0, 350];
 
         gpsfile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/MultiSensor_NOV_11_2015/GPS_rover_solution_best/Rear_antenna.pos';
         allGpsData=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla'); 
-
+%         gpsDataReader = GpsDataReader(gpsfile, options.startTime, 'lla');
         isConstantVel=false; % use constant velocity model
         options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
         
@@ -260,12 +260,10 @@ numUsedNHC = 0;
 numUsedZUPT = 0;
 filter = EKF_filter_s0frame_bias(options);
 
-imuIndex = find(allImuData(:, 1) >= options.startTime, 1, 'first');
-if imuIndex < 2
-    error('The start time %.4f is before the first IMU data at %.4f.', options.startTime, allImuData(1, 1));
-end
-preimutime = allImuData(imuIndex - 1, 1);
-imudata = allImuData(imuIndex, :)';
+imuIndex = 0;
+previmudata = imuDataReader.previous();
+preimutime = previmudata(1);
+imudata = imuDataReader.current();
 
 gpsIndex=1;
 imuCountSinceGnss=1;   % to count how many IMU data after the latest GPS observations
@@ -365,7 +363,7 @@ while (curimutime<options.endTime)
 %             gpsdata(4), [options.inillh_ant(1:2) * 180 / pi; options.inillh_ant(3)]);
 %         assert(max(abs(p_N_ant - [north2; east2; -up2])) < 1e-8);
 
-        measure = p_N_ant - quatrot_v000(filter.rvqs0(7:10),Tant2imu,1);
+        measure = p_N_ant - quatrot_v000(filter.rvqs0(7:10),options.imu_p_ant,1);
 
         predict=filter.rvqs0(1:3);
 
@@ -401,7 +399,7 @@ while (curimutime<options.endTime)
     end
     preimutime=curimutime;
     imuIndex = imuIndex + 1;
-    imudata = allImuData(imuIndex, :)';
+    imudata = imuDataReader.next();
     curimutime = imudata(1);
 end
 

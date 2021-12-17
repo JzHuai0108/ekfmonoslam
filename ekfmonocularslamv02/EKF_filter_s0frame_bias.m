@@ -55,7 +55,8 @@ classdef EKF_filter_s0frame_bias < handle
             qs2n=quatmult_v001(options.qb2n,rotro2qr(options.Cb2imu),2);            
             filter.rvqs0(7:10)=[qs2n(1);-qs2n(2:4)]; 
             filter.rvqs0(4:6)=options.Vn;
-           
+            filter.rvqs0(1:3) = quatrot_v000(qs2n, -options.imu_p_ant, 0);
+
             filter.imuErrors=options.imuErrors;   
             filter.velNoiseStd=options.velNoiseStd;       
             filter.p_k_k=zeros(filter.covDim);    % in s0 frame, position, velocity, attitude are of very small variance        
