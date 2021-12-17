@@ -118,7 +118,7 @@ end
 %close all
 filresfile=[resdir, 'filresult.bin'];
 kf = readdata(filresfile, 1+18);
-plotkf_v001(kf, resdir);
+plotNEDKalmanFilterResult(kf, resdir);
 imuresfile=[resdir, 'imuresult.bin'];
 err = readdata(imuresfile, 1+24);
 ploterr_v001(err,resdir);

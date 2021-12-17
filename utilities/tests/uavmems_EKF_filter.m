@@ -341,9 +341,6 @@ while (curimutime<options.endTime)
 
     %% GNSS observations.
     if (curimutime>=gpsdata(1))
-        if mod(numUsedGnssData, 20) == 0
-            fprintf('Using GNSS data at %.3f.\n', gpsdata(1, 1)); 
-        end
         imuCountSinceGnss=0;
         % get antenna position in N frame.
         % 1. matlab mapping toolbox
@@ -443,14 +440,13 @@ f(nextFig) = figure;
 plot(kf(:,1)-kf(1,1),kf(:,4),'g.')
 hold on
 plot(posdata(:,1)-kf(1,1),posdata(:,4),'r+');
-
 grid
 xlabel('Time [s]')
 ylabel('Height/m')
-title('Height of antenna by KF(green) and reference(red)');
-saveas(f(nextFig),[resdir 'red truth and height'],'fig');
+legend('IMU height by EKF', 'Antenna height by GNSS');
+saveas(f(nextFig),[resdir 'height'],'fig');
 
-plotkf_v001(kf, resdir);
+plotNEDKalmanFilterResult(kf, resdir, 4);
 err = readmatrix(imuresfile);
 
 nextFig=nextFig+1;
@@ -462,7 +458,7 @@ grid
 xlabel('Time [s]')
 ylabel('m/s^2')
 legend('X','Y','Z')
-title('Accelerometer bias drift');
+title('Accelerometer bias');
 
 nextFig=nextFig+1;
 nextDim=nextDim+3;
@@ -473,7 +469,7 @@ grid
 xlabel('Time [s]')
 ylabel('radian/s')
 legend('X','Y','Z')
-title('Gyro bias drift');
+title('Gyro bias');
 
 nextFig=nextFig+1;
 nextDim=nextDim+3;
@@ -483,7 +479,7 @@ plot(err(:,1)-err(1,1),err(:,loc),'marker','.')
 grid
 xlabel('Time [s]')
 legend('X','Y','Z')
-title('Accelerometer bias drift cov std');
+title('Accelerometer bias std dev');
 
 nextFig=nextFig+1;
 nextDim=nextDim+3;
@@ -493,7 +489,7 @@ plot(err(:,1)-err(1,1),err(:,loc),'marker','.')
 grid
 xlabel('Time [s]')
 legend('X','Y','Z')
-title('Gyro bias drift cov std');
+title('Gyro bias std dev');
 
 end
 
