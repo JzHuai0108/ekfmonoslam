@@ -198,7 +198,6 @@ switch experim
         options.maxCovStep=1/30; %maximum covariance propagation step, if equal to dt, means single speed mode
 
         imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/MultiSensor_NOV_11_2015/IMU_MicroStrain/3DM-GX3 Data Log D.csv';
-
         imuDataReader = MicrostrainImuDataReader(imufile, options.startTime);
 
         % position of the rear antenna at startTime
@@ -219,8 +218,7 @@ switch experim
         gpsSE=options.startTime+[0, 350];
 
         gpsfile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/MultiSensor_NOV_11_2015/GPS_rover_solution_best/Rear_antenna.pos';
-        allGpsData=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla'); 
-%         gpsDataReader = GpsDataReader(gpsfile, options.startTime, 'lla');
+        gpsDataReader = RtklibGpsDataReader(gpsfile, options.startTime, 'lla');
         isConstantVel=false; % use constant velocity model
         options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
         
@@ -265,13 +263,12 @@ previmudata = imuDataReader.previous();
 preimutime = previmudata(1);
 imudata = imuDataReader.current();
 
-gpsIndex=1;
 imuCountSinceGnss=1;   % to count how many IMU data after the latest GPS observations
 % read the GPS data and align the GPS data with the imu data
 if useGPS
-    gpsdata = allGpsData(gpsIndex, :)';
+    gpsdata = gpsDataReader.current();
     assert(gpsdata(1) >= gpsSE(1));
-    gnssStartTime = allGpsData(gpsIndex, 1);
+    gnssStartTime = gpsdata(1);
 else
     gpsdata=inf;
 end
@@ -344,7 +341,7 @@ while (curimutime<options.endTime)
 
     %% GNSS observations.
     if (curimutime>=gpsdata(1))
-        if mod(gpsIndex, 20) == 0
+        if mod(numUsedGnssData, 20) == 0
             fprintf('Using GNSS data at %.3f.\n', gpsdata(1, 1)); 
         end
         imuCountSinceGnss=0;
@@ -382,17 +379,14 @@ while (curimutime<options.endTime)
         end
 
         numUsedGnssData = numUsedGnssData + 1;
-        %Read the next gps data that is within the specified sessions
-        if gpsIndex < size(allGpsData, 1)
-            gpsIndex = gpsIndex + 1;
-            gpsdata = allGpsData(gpsIndex, :)';
-            if gpsdata(1) >= gpsSE(2) || gpsIndex == size(allGpsData, 1)
-                disp(['GNSS outage starts from ' num2str(gpsdata(1)) ...
-                    ' GTOW sec which is ', num2str(gpsdata(1) - options.startTime), ...
-                    ' since the start!']);
-                gpsIndex = size(allGpsData, 1);
-                gpsdata(1) = inf;
-            end
+        %Read the next gps data that is within the specified session.
+        lastgpsdata = gpsdata;
+        gpsdata = gpsDataReader.next();
+        if isempty(gpsdata) || gpsdata(1) >= gpsSE(2)
+            disp(['GNSS outage starts from ' num2str(lastgpsdata(1)) ...
+                ' GTOW sec which is ', num2str(lastgpsdata(1) - options.startTime), ...
+                ' since the start!']);
+            gpsdata(1) = inf;
         end
     else
         imuCountSinceGnss=imuCountSinceGnss+1;
@@ -410,7 +404,7 @@ fclose all;
 
 %% Plot navigation results
 kf = readmatrix(filresfile);
-posdata=allGpsData;
+posdata=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla');
 for i=1:size(posdata,1)
     [north, east, down] = geodetic2ned(posdata(i, 2), posdata(i, 3), posdata(i, 4), ...
             options.inillh_ant(1), options.inillh_ant(2), options.inillh_ant(3), ...
