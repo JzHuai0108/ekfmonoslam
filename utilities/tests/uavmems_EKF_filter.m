@@ -174,49 +174,51 @@ switch experim
         
         wie2n0=[0;0;0]; % earth rotation
     case 3
-        % test on inertial data captured by the Epson IMU mounted on a car.
-        % The GPS is kept out in the last 20 seconds to verify that the
-        % INS works in a short span.
+        % test on inertial data captured by the microstrain IMU mounted on a car.
+        R_H2_Im = [0, 1, 0; -1, 0, 0; 0, 0, 1];
+        p_H2_Im = [0; 0; -(123.6 - 102.8) - 17.8 / 2 - 3] * 1e-2; % +/- 5cm 
+        p_H1_Af = [1.15; 0.48; -1.23]; % +/- 2cm
+        p_H1_Ar = [-0.75; 0.45; -1.20]; % +/- 2cm
+        R_H2_H1 = eye(3);
+        p_H2_H1 = [0; -0.21; 0]; % +/- 2cm
+
         isOutNED=true;
         resdir='/home/jhuai/Desktop/temp/gnssimu/';
-        filresfile=[resdir, 'filresult.bin']; % navigation states
-        imuresfile=[resdir, 'imuresult.bin']; % imu error terms
+        filresfile=[resdir, 'filresult.csv']; % navigation states
+        imuresfile=[resdir, 'imuresult.csv']; % imu error terms
         % imu options
-        options.startTime=327674.0042;
-        options.endTime= 327674.0042+ 280;
+        options.startTime=327600;
+        options.endTime=options.startTime + 400; % 338555;
 
         options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
-        options.mechanization=2; % 1 for wander azimuth
-        
-        options.imutype=7; % 5 for 3dm gx3 35, 7 for epson m-g362pdc1
-        options.dt=1/30;  %sampling interval
-        options.maxCovStep=options.dt; %maximum covariance propagation step, if equal to dt, means single speed mode
+        options.mechanization=2;
 
-        imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/20151111_140059_D_timetagged.csv';
-        imuFileType=5; % 4 for 3DM GX3 -35 csv, 5 for m-g362pdc1 csv
+        options.imutype=5; % 5 for microstrain
+        options.dt = 0.06;
+        options.maxCovStep=1/30; %maximum covariance propagation step, if equal to dt, means single speed mode
+
+        imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/MultiSensor_NOV_11_2015/IMU_MicroStrain/3DM-GX3 Data Log D.csv';
+        imuFileType=4; % 4 for Microstrain csv
         allImuData=loadImuData(imufile, imuFileType, [options.startTime - options.dt, options.endTime + options.dt]); 
         assert(min(diff(allImuData(:, 1))) > 1e-4);
-        % the position of antenna at startTime
-        inixyz_ant=[592574.6611  -4856604.0417   4078414.4645]';
+        % position of the rear antenna at startTime
+        inixyz_ant=[592575.6758  -4856608.0160   4078416.7701]';
         options.inillh_ant=ecef2geo_v000(inixyz_ant,0);
-
-        options.Vn=[0;0;0]; % roughly estimated from GPS
-        options.Cb2imu=[1 0  0;  0 1 0; 0 0 1];% vehicle body frame to imu frame
-        accel= [0 0 9.81]; % The average accelerometer measurement vector at the beginning.
-        eulers2n=orientbymagnaccel(accel);
-        options.qb2n= roteu2qr('xyz', eulers2n); % estimated from accelerometer
+        options.Vn=[0;0;0]; % velocity in the navigation frame at startTime
+        options.Cb2imu=[0 -1 0; 1 0 0; 0 0 1]; % vehicle body frame to Microstrain IMU frame
+        options.qb2n= roteu2qr('xyz', [0.008056641; -0.00378418; 8.948364 * pi / 180]); % using H764G-2 INS_ROLL, INS_PITCH, INS_AZ
 
         options.InvalidateIMUerrors=false;
         options.initAttVar=2*pi/180; % 1 deg std for roll and pitch, 2 times 1 deg for yaw std
         
         % GPS options
-        useGPS=true; 
+        useGPS=true;
         useGPSstd=true; % use the std in the rtklib GPS solutons
-        Tant2imu=[0.454; -0.746; 1.344];
+        Tant2imu = R_H2_Im' * (p_H2_H1 - p_H2_Im + R_H2_H1 * p_H1_Ar);
         % gps start and end time
-        gpsSE=options.startTime+[0, 260];
-        
-        gpsfile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/20151111/Novatel_rover_KIN_20151111.pos';
+        gpsSE=options.startTime+[0, 350];
+
+        gpsfile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/MultiSensor_NOV_11_2015/GPS_rover_solution_best/Rear_antenna.pos';
         allGpsData=loadAllGPSData(gpsfile, [options.startTime, options.endTime], 'lla'); 
 
         isConstantVel=false; % use constant velocity model
@@ -228,12 +230,12 @@ switch experim
         options.sigmaZUPT = 0.1;% unit m/s
         numImuDataPerZUPT=round(sqrt(1/options.dt));
         % NHC options
-        options.sigmaNHC = 0.1;% unit m/s
-        numImuDataPerNHC = inf; % Turn off NHC since we don't know Cb2imu precisely.
+        options.sigmaNHC = 0.1; % unit m/s
+        numImuDataPerNHC = inf; % Turn off NHC.
         % minimum velocity before applying the NHC, this option decouples ZUPT and NHC
-        options.minNHCVel=2.0;
+        options.minNHCVel= 2.0;
 
-        gn0= [ 0; 0; 9.804]; % gravity in n frame at start
+        gn0= [0; 0; 9.8008]; % gravity in NED frame at start
         wie2n0=[0;0;0]; % earth rotation
 
         % state initialization options. 
