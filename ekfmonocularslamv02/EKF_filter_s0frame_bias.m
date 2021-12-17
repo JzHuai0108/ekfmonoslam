@@ -1,10 +1,21 @@
-% use EKF to estimate gyro and accel biases, scale factors are ignored, for
+% use EKF to estimate gyro and accel biases, for
 % MEMS IMU grade close to microstrain 3dm gx3-35
-% define s0 frame of sensor is tied to a known constant n-frame at epoch t0
+% s0 frame of the sensor coincides a constant n-frame(NED) at epoch t0.
 
-% the complete state is defined as 
-% delta(pos s in s0 frame, vx, vy, vz in s0 frame, q s0 to s frame)
-% accelerometer and gyro bias as random walk, or constants
+% The state
+% \f$ p_S^N \f$ position of the IMU in n-frame
+% \f$ v_N \f$ velocity of the IMU in n-frame
+% \f$ q_N^S \f$ quaternion representing the rotation from n-frame to IMU frame
+% \f$ b_a \f$ accelerometer bias
+% \f$ b_g \f$ gyroscope bias
+
+% The error state
+% \f$ \delta p_S^N = \hat{p}_S^N - p_S^N \f$  
+% \f$ \delta v^N = \hat{v}^N - v^N \f$
+% \f$ \psi^E \f$ Error in the rotation from n-frame to IMU frame $C_N^S$
+% defined as \f$ C_N^S = (I + \psi \times) \hat{C}_N^S \f$
+% \f$ \delta b_a = b_a - \hat{b}_a \f$ accelerometer bias
+% \f$ \delta b_g = b_g - \hat{b}_g \f$ gyro bias
 
 classdef EKF_filter_s0frame_bias < handle
     properties (Hidden)
@@ -147,6 +158,13 @@ classdef EKF_filter_s0frame_bias < handle
         % if type==1, update only position, velocity, accelerometer bias
         % this trick is inspired by S. Weiss PhD diss. page 77, Sec 3.1.6
         function correctstates(filter, predict,measure, H,R, type)
+            % Suppose the prediction function is h, and the measurement is
+            % z, then z = h(p, v, q, ba, bg). Formally,
+            % \f$ H_p = - \frac{\partial h(p \oplus \delta)}{\partial \delta} \f$
+            % \f$ H_\psi = - \frac{\partial h(C(q) \oplus \psi)}{\partial
+            % \psi} \f$. Note in this update function,
+            % \f$ p \oplus \delta = p - \delta \f$, and
+            % \f$ C(q) \oplus \psi = \exp(\psi) C(q) \f$.
             p_km1_k=filter.p_k_k;
             inno= predict-measure;
             %Kalman gain

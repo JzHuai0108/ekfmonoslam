@@ -1,20 +1,18 @@
-% This program tests ekf_filter_s0frame_bias class
-% This script aims at low grade IMU dead reckoning 
+% This program tests ekf_filter_s0frame_bias class which is suitable for
+% GNSS + low-grade IMU fusion.
 
-% (1) microstrain IMU readings may have gaps as large as 20 secs, cut
-% these, otherwise, gaps a bit larger than sampling interval are fine
-% (2) a UAV has a collision upon landing, so ZUPT after landing is
-% meaningless, so we discard data following and just prior to landing
-% (3) Estimating states with ZUPT using static IMU data prior
-% to launching seems problematic. I believe, it is due to accelerometer
-% bias on vertical axis suddenly shoot up upon taking off. So it is advised
-% to filter IMU and GPS data for UAV tests since launching
+% Test findings:
+% (1) Microstrain 3DM-GX3-35 IMU readings may have gaps as large as 20 secs.
+% (2) The UAV has a collision upon landing which changes the biases
+% dramatically.
+% (3) The estimated biases when the car is static but with engine running, 
+% or when the UAV is about to launch may be not so reliable as default zeros. 
 % (4) when a UAV flys up, it does not rotate itself until it reaches a
 % certain height. Ideally in autonomous flight, a UAV only turns at waypoints
-% (5) the UAV flies at maximum height of 25 meters, so we assume constant
-% gravity
-% (6) the UAV does not fly very far, so we assume fixed n-frame, and it
-% does not fly very long, so earth rotation is ignored
+% (5) the UAV flies at a max height of dozens of meters, say 25 m, so we may assume constant
+% local gravity.
+% (6) the UAV does not fly very far, so we may ignore the earth curvature.
+% For MEMS IMU, we can safely ignore the Coriolis forces.
 
 % The experiment on 2014/10/08 collected data with Espon IMU with GPS,
 % Microstrain 3DM-GX3-35 with GPS capability, 
@@ -340,7 +338,7 @@ while (curimutime<options.endTime)
         filter.correctstates(predict,measure, H,R);
         numUsedNHC = numUsedNHC + 1;
     end
-    
+
     %% GNSS observations.
     if (curimutime>=gpsdata(1))
         if mod(gpsIndex, 20) == 0

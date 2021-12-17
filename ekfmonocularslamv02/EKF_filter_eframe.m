@@ -6,11 +6,24 @@
 % n-frame, North-East-Down navigation frame that anchores on a moving point
 % of the vehicle, so it changes once the vehicle moves
 
-% The error states are \delta(ecef position of the imu in e-frame), 
-% \delta(velocity of the imu in e-frame),
-% \psi^e (error in the rotation from s-frame to e-frame $C_s^e$, 
-% defined as $\hat{C_s^e}= (I-[\psi^e]_{\times})C_s^e$), 
-% accelerometer and gyro bias drift, acc scale and gyro scale factor error
+% The state
+% \f$ p_S^E \f$ position of the IMU in e-frame
+% \f$ v_E \f$ velocity of the IMU in e-frame
+% \f$ q_S^E \f$ quaternion representing the rotation from IMU frame to e-frame
+% \f$ b_a \f$ accelerometer bias
+% \f$ b_g \f$ gyroscope bias
+% \f$ s_a \f$ accelerometer scale factor error
+% \f$ s_g \f$ gyroscope scale factor error
+
+% The error state
+% \f$ \delta p_S^E = \hat{p}_S^E - p_S^E \f$  
+% \f$ \delta v^E = \hat{v}^E - v^E \f$
+% \f$ \psi^E \f$ Error in the rotation from s-frame to e-frame $C_s^e$
+% defined as \f$(I + [\psi^e]_{\times}) \hat{C_s^e}= C_s^e \f$
+% \f$ \delta b_a = b_a - \hat{b}_a \f$ accelerometer bias
+% \f$ \delta b_g = b_g - \hat{b}_g \f$ gyro bias
+% \f$ \delta s_a = s_a - \hat{s}_a \f$ accelerometer scale factor error
+% \f$ \delta s_g = s_g - \hat{s}_g \f$ gyro scale factor error
 
 % attitude is expressed in Hamilton quaternions(wxyz format), in the P
 % matrix, their covariance takes only 3 dimensions, in units of radians^2. 
@@ -169,7 +182,17 @@ classdef EKF_filter_eframe < handle
         end
         %==============================================================================================
         %update both the covariance and state
-        function correctstates(filter, predict,measure, H,R, type)           
+        function correctstates(filter, predict,measure, H,R, type)   
+            % Suppose the prediction function is h, and the measurement is
+            % z, then z = h(p, v, q, ba, bg). Formally,
+            % \f$ H_p = - \frac{\partial h(p \oplus \delta)}{\partial \delta} \f$
+            % \f$ H_\psi = - \frac{\partial h(C(q) \oplus \psi)}{\partial
+            % \psi} \f$
+            % \f$ H_{b_a} = - \frac{\partial h(b_a)}{\partial b_a} \f$
+            % Note in this update function,
+            % \f$ p \oplus \delta = p - \delta \f$
+            % \f$ C(q) \oplus \psi = \exp(\psi) C(q) \f$
+            % \f$ b_a \oplus \delta b_a = b_a + \delta b_a \f$
             p_km1_k=filter.p_k_k;
             inno= predict-measure;
             %Kalman

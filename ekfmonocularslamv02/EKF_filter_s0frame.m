@@ -2,11 +2,12 @@
 % The following state space model is used :
 % the complete state is defined as delta(ecef x,y,z of sensor at epoch t0,
 % q s0 2 e frame(s0 frame of sensor is tied to epoch t0 of the imu)),
-% the delta(pos s in s0 frame, vx, vy, vz in s0 frame of sensor, q s0 to s frame)
+% the delta(pos s in s0 frame, vx, vy, vz in s0 frame of sensor, \psi)
 % accelerometer and gyro bias as random walk,
 % acc scale and gyro scale factor as random walk,
 % the camera configuration, delta(qimu2cam), and delta(Timu2cam),
 % follows by delta of group frames and feature invese depths.
+% s_C_s0 = (I + \psi \times) s_\hat{C}_s0
 
 % the camera configuration can be turned off after they
 % ramain constant for a while, and their values are stored in model.
