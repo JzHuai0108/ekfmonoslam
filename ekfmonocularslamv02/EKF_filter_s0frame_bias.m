@@ -24,6 +24,7 @@ classdef EKF_filter_s0frame_bias < handle
     end
     % The following properties can be set only by class methods
     properties (SetAccess = private)
+        stateTime; % state timestamp
         invalidateIMUerrors; % reset IMU errors when they goes beyond expectation
         imuType; % the type of IMU, e.g., MEMS 3DX GM 3-35, Steval inems, etc.
         imuErrorModel=3; % the IMU error model corresponding to biases
@@ -39,6 +40,7 @@ classdef EKF_filter_s0frame_bias < handle
     end
     methods
         function filter = EKF_filter_s0frame_bias(options)
+            filter.stateTime = options.startTime;
             filter.invalidateIMUerrors=options.InvalidateIMUerrors;
             filter.imuType=options.imutype;
             filter.imuErrorModel=options.imuErrorModel;          
@@ -136,6 +138,7 @@ classdef EKF_filter_s0frame_bias < handle
             else
                 filter.rvqs0=strapdown_local_quat_constvel(filter.rvqs0, filter.rqs02e, accinc, gyroinc, dt1, gwomegaw);   
             end
+            filter.stateTime = U1(8);
         end
         function ffun_covariance(filter, imuaccum, covupt_time, curimutime, isConstantVel )
             % propagate the covariance in the local s0 frame
@@ -154,10 +157,7 @@ classdef EKF_filter_s0frame_bias < handle
             filter.p_k_k=sparse(Pvf);
         end
         %==============================================================================================
-        % if type==0, default, update all the state
-        % if type==1, update only position, velocity, accelerometer bias
-        % this trick is inspired by S. Weiss PhD diss. page 77, Sec 3.1.6
-        function correctstates(filter, predict,measure, H,R, type)
+        function applied = correctstates(filter, predict, measure, H, R, measurementTime, gatingtest)
             % Suppose the prediction function is h, and the measurement is
             % z, then z = h(p, v, q, ba, bg). Formally,
             % \f$ H_p = - \frac{\partial h(p \oplus \delta)}{\partial \delta} \f$
@@ -165,24 +165,40 @@ classdef EKF_filter_s0frame_bias < handle
             % \psi} \f$. Note in this update function,
             % \f$ p \oplus \delta = p - \delta \f$, and
             % \f$ C(q) \oplus \psi = \exp(\psi) C(q) \f$.
-            p_km1_k=filter.p_k_k;
-            inno= predict-measure;
-            %Kalman gain
-            K=p_km1_k*H'/(H*p_km1_k*H'+R);
-            deltaX=K*inno;            
-            if(nargin==5||type==0)
-                filter.p_k_k=(eye(size(p_km1_k,1))-K*H)*p_km1_k*(eye(size(p_km1_k,1))-K*H)'+K*R*K';
-                % compute updated states                
-                filter.rvqs0(1:6)=filter.rvqs0(1:6)-deltaX(1:6); % position and velocity           
-                qst=rvec2quat_v000(deltaX(7:9));
-                filter.rvqs0(7:10)=quatmult_v000(qst, filter.rvqs0(7:10));                
-                filter.imuErrors = filter.imuErrors + deltaX(filter.imuBiasDriftSIP:end);    
-            elseif(type==1)
-                filter.p_k_k=(eye(size(p_km1_k,1))-K*H)*p_km1_k*(eye(size(p_km1_k,1))-K*H)'+K*R*K';
-                % update states                
-                filter.rvqs0(1:6)=filter.rvqs0(1:6)-deltaX(1:6); % position and velocity                            
-                filter.imuErrors(1:3) = filter.imuErrors(1:3) + deltaX(filter.imuBiasDriftSIP+(0:2));  
+            
+            if nargin < 7
+                gatingtest = true;
             end
+            if nargin < 6
+                measurementTime = filter.stateTime;
+            else
+                if (measurementTime > filter.stateTime)
+                    fprintf('Warn: Measurement time %.6f  >= state time %.6f\n', measurementTime, filter.stateTime);
+                end
+            end
+            p_km1_k=filter.p_k_k;
+            inno=predict-measure;
+            S=H*p_km1_k*H'+R;
+            if gatingtest
+                gamma=inno'/S*inno;
+                tol = chi2inv(0.99, 3);
+                if gamma > tol
+                    fprintf(['Discard measurement at %.6f with large ', ... 
+                             'gamma %.4f > tol %.4f.\n'], measurementTime, gamma, tol);
+                    applied = false;
+                    return;
+                end
+            end
+            K=p_km1_k*H'/S;
+            deltaX=K*inno;
+
+            filter.p_k_k=(eye(size(p_km1_k,1))-K*H)*p_km1_k*(eye(size(p_km1_k,1))-K*H)'+K*R*K';
+            % compute updated states                
+            filter.rvqs0(1:6)=filter.rvqs0(1:6)-deltaX(1:6); % position and velocity           
+            qst=rvec2quat_v000(deltaX(7:9));
+            filter.rvqs0(7:10)=quatmult_v000(qst, filter.rvqs0(7:10));                
+            filter.imuErrors = filter.imuErrors + deltaX(filter.imuBiasDriftSIP:end);    
+            applied = true;
         end
 
         function SaveToFile(filter, ~, preimutime, ffilres)

@@ -252,6 +252,8 @@ end
 
 fprintf('\nEKF of MEMS IMU on data of experiment %d!\n\n', experim);
 numUsedGnssData = 0;
+lastUsedGnssDataTime = 0;
+
 numUsedNHC = 0;
 numUsedZUPT = 0;
 filter = EKF_filter_s0frame_bias(options);
@@ -269,6 +271,7 @@ imuCountSinceGnss=1;   % to count how many IMU data after the latest GPS observa
 if useGPS
     gpsdata = allGpsData(gpsIndex, :)';
     assert(gpsdata(1) >= gpsSE(1));
+    gnssStartTime = allGpsData(gpsIndex, 1);
 else
     gpsdata=inf;
 end
@@ -318,7 +321,7 @@ while (curimutime<options.endTime)
         predict=filter.rvqs0(4:6);
         H=sparse([zeros(3) eye(3) zeros(3,size(filter.p_k_k,1)-6)]);
         R=eye(3)*options.sigmaZUPT^2;
-        filter.correctstates(predict,measure, H,R);
+        filter.correctstates(predict,measure, H, R, curimutime, false);
         numUsedZUPT = numUsedZUPT + 1;
     end
 
@@ -335,7 +338,7 @@ while (curimutime<options.endTime)
         
         measure=[0;0];
         R=eye(2)*options.sigmaNHC^2;
-        filter.correctstates(predict,measure, H,R);
+        filter.correctstates(predict,measure, H, R, curimutime, false);
         numUsedNHC = numUsedNHC + 1;
     end
 
@@ -365,19 +368,19 @@ while (curimutime<options.endTime)
         predict=filter.rvqs0(1:3);
 
         H=sparse([eye(3), zeros(3), zeros(3,size(filter.p_k_k,1)-6)]);
-        % the following setting of noise variances is suitable for RTKlib output
         if(~useGPSstd)
-            if(gpsdata(5)==1)
-                R=diag([0.05,0.05,0.1].^2);
-            elseif(gpsdata(5)==2)
-                R=diag([0.5,0.5,1.0].^2);
-            else
-                R=diag([10,10,10].^2);
-            end
+            R=defaultGpsCovariance(gpsdata(5));
         else
-            R=4*diag(gpsdata(7:9).^2);
+            R=diag((4 * gpsdata(7:9)).^2);
         end
-        filter.correctstates(predict,measure, H,R);
+        if gpsdata(1) - lastUsedGnssDataTime > 5 || gpsdata(1) - gnssStartTime < 10
+            gatingtest = false;
+        end
+        applied = filter.correctstates(predict,measure, H, R, gpsdata(1), gatingtest);
+        if applied
+            lastUsedGnssDataTime = gpsdata(1);
+        end
+
         numUsedGnssData = numUsedGnssData + 1;
         %Read the next gps data that is within the specified sessions
         if gpsIndex < size(allGpsData, 1)
