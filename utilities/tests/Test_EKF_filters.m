@@ -496,9 +496,6 @@ while (~feof(fimu)&&curimutime<options.endTime)
         filter.ffun_covariance(imuaccum, covupt_time, curimutime);
         covupt_time=curimutime;
         imuaccum=zeros(6,1);
-        %Record covariance and navigation solution for the smoother
-        %Note that I am recording the predicted solutions. That is why the
-        %backward part must use filtered solution.
         imuerrors=filter.imuErrors;
         adjcoeff=ones(size(imuerrors));
         % since the scale factor is in ppt rather than in ppm, we need to

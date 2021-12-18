@@ -302,9 +302,6 @@ while (curimutime<options.endTime)
         filter.ffun_covariance(imuaccum, covupt_time, curimutime, isConstantVel);
         covupt_time=curimutime;
         imuaccum=zeros(6,1);
-        %Record covariance and navigation solution for the smoother
-        %Note that I am recording the predicted solutions. That is why the
-        %backward part must use filtered solution.
         formatString = '%.8f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.8f,%.8f,%.8f,%.8f,%.8f,%.8f\n';
         fprintf(fimures, formatString, [curimutime;filter.imuErrors;...
             full(sqrt(diag(filter.p_k_k(filter.imuBiasDriftSIP+(0:5),...
