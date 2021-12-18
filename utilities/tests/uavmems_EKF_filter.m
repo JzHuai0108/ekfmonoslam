@@ -21,14 +21,17 @@
 % removed.
 
 function uavmems_EKF_filter()
+clear variables;
+clc; close all;
 workspace_path = '/media/jhuai/docker/ekfmonoslam/';
-addpath([workspace_path 'instk']); % imu functions
+addpath([workspace_path 'instk/TransFunctions']); % imu functions
+addpath([workspace_path 'instk/Common']);
+addpath([workspace_path 'instk/OldVersions']);
 addpath([workspace_path 'voicebox']); % rotation functions
 addpath([workspace_path 'ekfmonocularslamv02']); % filter classes
-addpath([workspace_path 'utilities']); % data readers
+run([workspace_path 'utilities/install.m']); % data readers
 
-clear variables;
-clc; close all; format longg;
+format longg;
 rng('default');
 
 experim=3;

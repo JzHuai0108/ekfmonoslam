@@ -26,7 +26,7 @@
 
 %imutype is directly transferred to imu_err_defs_v000
 
-function [STM Qd]=sys_metric_phipsi(Cen, h, Vn, att, acc, gyro, dt, mode, imutype,modelNo)
+function [STM Qd]=sys_metric_phipsi(Cen, h, Vn, att, acc, gyro, dt, mode, imutype, modelNo)
 
 %%%Navigation error model
 %1-3:Position error in meters
@@ -68,7 +68,7 @@ Nnav(7:9,4:6)=-Cbn; %Effect of gyroscope errors
 %PHI model
 if (mode==1)
     sL=-Cen(3,3);
-    cL=Cen(3,1);    %Note that I assume wander=0 for Cen. (This is not a singular implementation)
+    cL=Cen(3,1);    %Note that I assume wander=0 for Cen. (This is not a non-singular implementation)
     %%position errors
     Anav(1:3,1:2)=Anav(1:3,1:2)-skew(Vn)*[0 Fc(1,1);-Fc(2,2) 0; 0 Fc(3,1)];
     

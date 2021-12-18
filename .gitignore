@@ -12,3 +12,5 @@ EKF_monoSLAM_1pRANSAC/figures/
 mexopencv2\.4-vc10-x64/
 
 *.asv
+
+instk/.idea/
