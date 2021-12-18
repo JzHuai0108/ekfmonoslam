@@ -441,7 +441,7 @@ grid
 xlabel('Time [s]')
 ylabel('Height/m')
 legend('IMU height by EKF', 'Antenna height by GNSS');
-saveas(f(nextFig),[resdir 'height'],'fig');
+saveas(f(nextFig),[resdir 'height'],'tif');
 
 plotNEDKalmanFilterResult(kf, resdir, 4);
 err = readmatrix(imuresfile);
