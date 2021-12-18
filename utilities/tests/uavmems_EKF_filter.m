@@ -363,7 +363,7 @@ while (curimutime<options.endTime)
 
         H=sparse([eye(3), zeros(3), zeros(3,size(filter.p_k_k,1)-6)]);
         if(~useGPSstd)
-            R=defaultGpsCovariance(gpsdata(5));
+            R=defaultGpsCovariance(RtklibQualityToGpsQuality(gpsdata(5)));
         else
             R=diag((4 * gpsdata(7:9)).^2);
         end
