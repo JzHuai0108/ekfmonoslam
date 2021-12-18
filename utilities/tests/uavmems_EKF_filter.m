@@ -188,7 +188,7 @@ switch experim
         imuresfile=[resdir, 'imuresult.csv']; % imu error terms
         % imu options
         options.startTime=327600;
-        options.endTime=options.startTime + 400; % 338555;
+        options.endTime=338555;
 
         options.imuErrorModel=5; % 4 for random constant acc bias and gyro bias, 5 for random walk acc bias and random constant gyro bias
         options.mechanization=2;
@@ -215,7 +215,7 @@ switch experim
         useGPSstd=true; % use the std in the rtklib GPS solutons
         options.imu_p_ant = R_H2_Im' * (p_H2_H1 - p_H2_Im + R_H2_H1 * p_H1_Ar);
         % gps start and end time
-        gpsSE=options.startTime+[0, 350];
+        gpsSE=[options.startTime, options.endTime];
 
         gpsfile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/MultiSensor_NOV_11_2015/GPS_rover_solution_best/Rear_antenna.pos';
         gpsDataReader = RtklibGpsDataReader(gpsfile, options.startTime, 'lla');
