@@ -19,8 +19,7 @@ end
 
 addpath([workspace_dir '\instk']); % imu functions
 addpath([workspace_dir '\voicebox']); % for rotro2qr and rotqr2eu, they are more robust than dcm2quat_v000 and dcm2euler_v000
-addpath([workspace_dir '\utilities']);
-addpath([workspace_dir '\ekfmonocularslamv02']);
+run([workspace_dir, '\ekfmonoslam\install.m']);
 
 import java.util.LinkedList
 format longg;

@@ -1,5 +1,5 @@
 addpath('..\mexopencv\');
-addpath('..\utilities');
+addpath('..\ekfmonoslam');
 sequencePath ='G:\data\20130808\casio2_3430.MOV';
 myVid= VideoReader(sequencePath);
 img0 = takeimagefromvideo(myVid, 12180, 1);

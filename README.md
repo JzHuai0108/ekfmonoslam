@@ -32,19 +32,19 @@ Download the ekfmonoslam package.
 # 3. Test with data
 
 A test data, "20130808", can be retrieved from [here](https://pan.baidu.com/s/1c1IdiQO). Once downloaded, put it to the ekfmonoslam/data folder.
-(1) To test GPS/IMU integration, open the folder ekfmonoslam/utilities in maplab, then run Test_EKF_filters.m under utilities/tests.
+(1) To test GPS/IMU integration, open the folder ekfmonoslam/tests in matlab, then run Test_EKF_filters.m.
 
-(2) To test GPS/IMU/Monocular fusion, in matlab open the folder  ekfmonoslam/ekfmonocularslamv02, then run mainslam.m.
+(2) To test GPS/IMU/Monocular fusion, run mainslam.m.
 
 (3) Unscented Kalman filter for GPS/IMU/Monocular camera fusion, 
-refer to utilities/gssm_cam_ins_gps.m and utilities/tests/cam_ins_gps.m. 
+refer to gssm_cam_ins_gps.m and cam_ins_gps.m. 
 But this was very experimental.
 
 # 4. Simulate noisy IMU data given ground truth poses
 
 Suppose the ground truth SE(3) poses (3D position and 3DOF attitude) are given at a regular interval, e.g. 0.1s, the noisy IMU data at a particular frequency, e.g., 100Hz can be generated in two steps: 1, generate the continuous trajectory by interpolating the existing poses, differentiating the continuous trajectory will give angular rates and linear accelerations, for details, see [1]; 2, add noise to these true IMU samples, given error specs of a particular IMU model.
 
-In practice, first build and run the program in the folder SE3Interpolation. Two test cases are provided in SE3Interpolation, for both KITTI seq 00 and Tsukuba CG stereo dataset. To run it, you need to download at least one of these two datasets. This step will produce the true IMU samples. Then to add noise, call testAddImuError.m in utilities/tests folder.
+In practice, first build and run the program in the folder SE3Interpolation. Two test cases are provided in SE3Interpolation, for both KITTI seq 00 and Tsukuba CG stereo dataset. To run it, you need to download at least one of these two datasets. This step will produce the true IMU samples. Then to add noise, call testAddImuError.m in tests folder.
 
 
 # Reference

@@ -3,7 +3,6 @@ close all
 clear;
 fprintf('\n cam_ins_gps.m to test filtering techniques for combining GPS, mems IMU and camera \n\n');
 %--- General setup
-% addpath('C:\JianzhuHuai\GPS_IMU\programs\ekfmonocularslam');
 experim=1;
 switch experim
     case 0%H764G

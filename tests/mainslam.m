@@ -31,12 +31,12 @@
 % converge unless ZUPT is applied. In this almost free inertial mode, NHC
 % can have a little adverse effect.
 addpath('..\instk'); % imu functions
-addpath('..\utilities'); % imu functions
 addpath('..\toolbox_calib');% to use project_point2.m and normalize.m
 addpath('..\mexopencv\');% cvcalcopticflowpyrlk and cvgoodfeaturestotrack
 addpath('..\voicebox\'); % for rotro2qr and rotqr2eu, they are more robust
 % than dcm2quat_v000 and dcm2euler_v000
 addpath('..\EKF_monoSLAM_1pRANSAC\matlab_code\'); % ekf slam camera functions of civera
+run('..\ekfmonoslam\install.m');
 
 import java.util.LinkedList
 clear variables;

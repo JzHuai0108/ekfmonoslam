@@ -1,5 +1,7 @@
 function drawBundlerSFMOutput(poses)
-addpath('C:\JianzhuHuai\GPS_IMU\programs\matlab_ws\utilities');
+
+run('ekfmonoslam/install.m');
+
 if(nargin ==0)
 % example poses data excerpted from bundler.out
 poses=[1439.80857924 0.102953745942 -0.14103860973

@@ -28,8 +28,7 @@ addpath([workspace_path 'instk/TransFunctions']); % imu functions
 addpath([workspace_path 'instk/Common']);
 addpath([workspace_path 'instk/OldVersions']);
 addpath([workspace_path 'voicebox']); % rotation functions
-addpath([workspace_path 'ekfmonocularslamv02']); % filter classes
-run([workspace_path 'utilities/install.m']); % data readers
+run([workspace_path 'ekfmonoslam/install.m']); % data readers
 
 format longg;
 rng('default');
