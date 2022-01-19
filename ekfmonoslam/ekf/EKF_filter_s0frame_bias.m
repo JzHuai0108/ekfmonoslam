@@ -1,18 +1,18 @@
 % use EKF to estimate gyro and accel biases, for
 % MEMS IMU grade close to microstrain 3dm gx3-35
-% s0 frame of the sensor coincides a constant n-frame(NED) at epoch t0.
+% s0 frame of the sensor coincides a earth-fixed n-frame(NED) at epoch t0, n0.
 
 % The state
-% \f$ p_S^N \f$ position of the IMU in n-frame
-% \f$ v_N \f$ velocity of the IMU in n-frame
-% \f$ q_N^S \f$ quaternion representing the rotation from n-frame to IMU frame
+% \f$ p_S^N \f$ position of the IMU in n0-frame
+% \f$ v_N \f$ velocity of the IMU in n0-frame
+% \f$ q_N^S \f$ quaternion representing the rotation from n0-frame to IMU frame
 % \f$ b_a \f$ accelerometer bias
 % \f$ b_g \f$ gyroscope bias
 
 % The error state
 % \f$ \delta p_S^N = \hat{p}_S^N - p_S^N \f$  
 % \f$ \delta v^N = \hat{v}^N - v^N \f$
-% \f$ \psi^E \f$ Error in the rotation from n-frame to IMU frame $C_N^S$
+% \f$ \psi^E \f$ Error in the rotation from n0-frame to IMU frame $C_N^S$
 % defined as \f$ C_N^S = (I + \psi \times) \hat{C}_N^S \f$
 % \f$ \delta b_a = b_a - \hat{b}_a \f$ accelerometer bias
 % \f$ \delta b_g = b_g - \hat{b}_g \f$ gyro bias
@@ -45,13 +45,13 @@ classdef EKF_filter_s0frame_bias < handle
             filter.imuType=options.imutype;
             filter.imuErrorModel=options.imuErrorModel;          
             filter.dt=options.dt; 
-            
+
             inillh=options.inillh_ant;            
             Ce2n0=llh2dcm_v000(inillh(1:2),[0;1]);           
             filter.rqs02e=[ecef2geo_v000(options.inillh_ant,1); rotro2qr(Ce2n0')];
             % assume the IMU is very close to antenna
-            filter.rvqs0=zeros(10,1);           
-           
+            filter.rvqs0=zeros(10,1);
+
             qs2n=quatmult_v001(options.qb2n,rotro2qr(options.Cb2imu),2);            
             filter.rvqs0(7:10)=[qs2n(1);-qs2n(2:4)]; 
             filter.rvqs0(4:6)=options.Vn;

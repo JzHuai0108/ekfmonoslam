@@ -342,19 +342,10 @@ while (curimutime<options.endTime)
     if (curimutime>=gpsdata(1))
         imuCountSinceGnss=0;
         % get antenna position in N frame.
-        % 1. matlab mapping toolbox
         [north, east, down] = geodetic2ned(gpsdata(2), gpsdata(3), gpsdata(4), ...
             options.inillh_ant(1), options.inillh_ant(2), options.inillh_ant(3), ...
             wgs84Ellipsoid, 'radians');
         p_N_ant = [north; east; down];
-        % 2. our own implementation
-%         gpsecef=lla2ecef([gpsdata(2:3) * 180 / pi; gpsdata(4)]')';
-%         p_N_ant_goodold = quatrot_v000(filter.rqs02e(4:7), gpsecef - inixyz_ant, 1);
-%         assert(max(abs(p_N_ant - p_N_ant_goodold)) < 1e-8);
-        % 3. matlab automated driving toolbox.
-%         [east2, north2, up2] = latlon2local(gpsdata(2) * 180 / pi, gpsdata(3) * 180 / pi, ...
-%             gpsdata(4), [options.inillh_ant(1:2) * 180 / pi; options.inillh_ant(3)]);
-%         assert(max(abs(p_N_ant - [north2; east2; -up2])) < 1e-8);
 
         measure = p_N_ant - quatrot_v000(filter.rvqs0(7:10),options.imu_p_ant,1);
 
