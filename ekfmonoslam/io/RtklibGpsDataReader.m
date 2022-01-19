@@ -1,5 +1,8 @@
 
 classdef RtklibGpsDataReader < DataReader
+properties
+    intervalFactorToWarn = 10;
+end
 properties(Access=private)
     gpsdata = zeros(12, 1);  % time(sec), x, y, z, Q, n, cov x, cov y, cov z, and others in metric units.
     fileID;
@@ -21,7 +24,7 @@ methods(Access=protected)
         lasttime = this.gpsdata(1);
         [this.fileID, this.gpsdata]=grabnextgpsdata(this.fileID, this.gnssFileType, this.outputFormat);
         currenttime = this.gpsdata(1);
-        if currenttime - lasttime > this.nominalSamplingInterval * 1.5
+        if currenttime - lasttime > this.nominalSamplingInterval * this.intervalFactorToWarn
             fprintf('Warn: RTKLib GNSS data missing from %.6f to %.6f!\n', ...
                 lasttime, currenttime);
         end

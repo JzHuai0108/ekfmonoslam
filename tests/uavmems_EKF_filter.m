@@ -23,7 +23,7 @@
 function uavmems_EKF_filter()
 clear variables;
 clc; close all;
-workspace_path = '/media/jhuai/docker/ekfmonoslam/';
+workspace_path = 'H:\jhuai\tools\ekfmonoslam\';
 addpath([workspace_path 'instk/TransFunctions']); % imu functions
 addpath([workspace_path 'instk/Common']);
 addpath([workspace_path 'instk/OldVersions']);
@@ -185,7 +185,7 @@ switch experim
         p_H2_H1 = [0; -0.21; 0]; % +/- 2cm
 
         isOutNED=true;
-        resdir='/home/jhuai/Desktop/temp/gnssimu/';
+        resdir='I:\jhuai\china-beidou-annal\results\spinlabnov112015\ekf2\';
         filresfile=[resdir, 'filresult.csv']; % navigation states
         imuresfile=[resdir, 'imuresult.csv']; % imu error terms
         % imu options
@@ -199,7 +199,7 @@ switch experim
         options.dt = 0.06;
         options.maxCovStep=1/30; %maximum covariance propagation step, if equal to dt, means single speed mode
 
-        imufile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/MultiSensor_NOV_11_2015/IMU_MicroStrain/3DM-GX3 Data Log D.csv';
+        imufile = 'G:\jhuai\data\osu-spin-lab\MultiSensor_NOV_11_2015\IMU_MicroStrain\3DM-GX3 Data Log D.csv';
         imuDataReader = MicrostrainImuDataReader(imufile, options.startTime);
 
         % position of the rear antenna at startTime
@@ -219,8 +219,10 @@ switch experim
         % gps start and end time
         gpsSE=[options.startTime, options.endTime];
 
-        gpsfile='/media/jhuai/SeagateData/jhuai/data/osu-spin-lab/MultiSensor_NOV_11_2015/GPS_rover_solution_best/Rear_antenna.pos';
+        gpsfile='G:\jhuai\data\osu-spin-lab\MultiSensor_NOV_11_2015\GPS_rover_solution_best\Rear_antenna.pos';
+        gpsfile = 'I:\jhuai\china-beidou-annal\results\spinlabnov112015\RTKLib\Leica\Leica.pos';
         gpsDataReader = RtklibGpsDataReader(gpsfile, options.startTime, 'lla');
+        gpsDataReader.intervalFactorToWarn = 15;
         isConstantVel=false; % use constant velocity model
         options.velNoiseStd=1; % velocity noise density m/s^2 in a horizontally axis
         
