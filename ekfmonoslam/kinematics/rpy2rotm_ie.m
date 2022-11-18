@@ -8,6 +8,11 @@ function ll_R_b = rpy2rotm_ie(rpy)
 % and see eq 6 page 233 in Waypoint Software 8.90 User Manual v10 Aug 2020.
 % Note bynav uses the same notation as described here
 % https://www.bynav.com/cn/resource/bywork/healthy-work/654.html
+% About heading/azimuth and yaw, according to Waypoint Software 8.90 User
+% Manual v10 Aug 2020, "Positive heading rotation is clockwise from North",
+% and "yaw = –heading". As the manual plots azimuth and heading together,
+% I think, azimuth is equivalent to heading. This is also confirmed here
+% https://aviation.stackexchange.com/questions/24899/what-is-the-difference-between-azimuth-and-heading
 
 r = rpy(1);
 p = rpy(2);
