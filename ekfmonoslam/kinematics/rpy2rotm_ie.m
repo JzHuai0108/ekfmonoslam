@@ -1,7 +1,7 @@
 function ll_R_b = rpy2rotm_ie(rpy)
 % Compute the rotation matrix from the body frame to the local level frame
 % in the Inertial Explorer convention.
-% The body frame is in general front forward up.
+% The body frame is in general right forward up.
 % The local level frame is east north up.
 % ll_R_b = R3(-yaw) * R1(-pitch) * R2(-roll). Note our R1(a) = IE R1(-a).
 % see page 50 bottom in waypoint software 6.0 user manual November 2014
